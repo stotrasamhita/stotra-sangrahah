@@ -1,6 +1,5 @@
 \documentclass[a5paper,twoside,12pt]{book}
 \usepackage{shloka}
-\usepackage{wallpaper}
 
 %%% PAGE SIZE and MARGINS %%%
 \usepackage[top=1.5cm, bottom=1.8cm, left=1.5cm, right=1.5cm]{geometry}
@@ -54,7 +53,7 @@
 \setlength{\columnsep}{30pt}
 
 %%% HYPERLINKS %%%
-\usepackage[a5paper,bookmarks=true,bookmarksopen=true,xetex,colorlinks=true,
+\usepackage[bookmarks=true,bookmarksopen=true,xetex,colorlinks=true,
 linkcolor=black,			% colour of internal links
 citecolor=cyan,				% colour of links to bibliography
 filecolor=magenta,			% colour of file links
@@ -66,10 +65,7 @@ urlcolor=blue				% colour of external links
 \vbadness=10000
 %\listfiles
 \begin{document}
-%\input{frontmatter}
 \Large\setmainfont[Script=Devanagari,Mapping=tex-text]{Sanskrit 2003}
-\setcounter{page}{0}
-\pagenumbering{arabic}
 \begin{center}
 \input{"FPATH"}
 \end{center}
@@ -80,6 +76,6 @@ urlcolor=blue				% colour of external links
 \textsf{This stotra can be accessed in multiple scripts at:\\
 \url{http://stotrasamhita.net/wiki/SSURL}\\[1ex]
 Facebook: \url{http://facebook.com/StotraSamhita}\\[0.7ex]
-GitHub: \url{http://github.com/stotrasamhita/}\\[0.7ex]
+GitHub: \url{http://github.com/stotrasamhita}\\[0.7ex]
 Credits: \url{http://stotrasamhita.net/wiki/StotraSamhita:About}}
 \end{document}
