@@ -13,7 +13,7 @@ if [[ $fpath -nt $jobname.pdf ]]
 then
 echo Rebuilding $jobname.pdf... > /dev/stderr
 echo Rebuilding $jobname.pdf...
-cat stotra-template.tex | sed "s@FPATH@$fpath@;s@SSURL@$SSURL@" | xelatex -jobname=$jobname
+cat stotra-kindle-template.tex | sed "s@FPATH@$fpath@;s@SSURL@$SSURL@" | xelatex -jobname=$jobname
 else
 echo PDF up-to-date.
 fi
