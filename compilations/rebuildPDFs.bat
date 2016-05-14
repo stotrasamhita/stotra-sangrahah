@@ -6,4 +6,5 @@ latexmk -xelatex stotramanjari -g >> rebuild.log
 cd ..
 cd nityaparayanam
 latexmk -xelatex nityaparayanam -g >> rebuild.log
+latexmk -xelatex nityaparayanam-vedam -g >> rebuild.log
 cd ..
