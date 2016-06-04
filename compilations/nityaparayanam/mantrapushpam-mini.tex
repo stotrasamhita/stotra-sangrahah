@@ -80,7 +80,31 @@ urlcolor=blue               % colour of external links
 \newcommand{\sav}{\char"093D\char"E007}
 \newcommand{\sG}{\char"0919\char"094D\char"E007}
 \begin{document}
-\Large%\setmainfont[Script=Devanagari,Mapping=tex-text]{Siddhanta}
+\pagenumbering{Roman}
+\thispagestyle{empty}\clearpage
+\begin{titlepage}
+\vspace*{6.5cm}
+\begin{center}
+{\font\x="Sanskrit 2003:script=deva,mapping=tex-text" at 64pt \x मन्त्रपुष्पम्}
+\end{center}
+\end{titlepage}
+
+\clearemptydoublepage %
+\setcounter{page}{0} %
+\pagenumbering{roman} %
+\renewcommand{\chaptermark}[1]{%
+\markboth{\large #1}{}} %
+\pdfbookmark[1]{Contents}{Contents} %
+%\begin{center}
+\begin{large}
+\tableofcontents
+\end{large}
+%\end{center}
+
+\mbox{}
+\clearpage
+\thispagestyle{empty}
+\clearemptydoublepage
 %\setmainfont[Script=Devanagari,Mapping=tex-text,FakeStretch=1.08]{Sanskrit 2003}
 %\setmainfont[Script=Devanagari,Mapping=tex-text]{Chandas}
 %\setmainfont[Script=Devanagari,Mapping=tex-text]{Siddhanta}
