@@ -92,3 +92,5 @@ sympy-plots-for-*.tex/
 #compilations/
 stotra-sangrahah.sublime-project
 stotra-sangrahah.sublime-workspace
+compilations/compilations.sublime-project
+compilations/compilations.sublime-workspace
