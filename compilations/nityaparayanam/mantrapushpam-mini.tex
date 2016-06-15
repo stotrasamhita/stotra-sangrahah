@@ -83,21 +83,21 @@ urlcolor=blue               % colour of external links
 \pagenumbering{Roman}
 \thispagestyle{empty}\clearpage
 \begin{titlepage}
-\vspace*{6.5cm}
-\begin{center}
-{\font\x="Sanskrit 2003:script=deva,mapping=tex-text" at 64pt \x मन्त्रपुष्पम्}
-\end{center}
+    \vspace*{6.5cm}
+    \begin{center}
+        {\font\x="Sanskrit 2003:script=deva,mapping=tex-text" at 64pt \x मन्त्रपुष्पम्}
+    \end{center}
 \end{titlepage}
 
 \clearemptydoublepage %
 \setcounter{page}{0} %
 \pagenumbering{roman} %
 \renewcommand{\chaptermark}[1]{%
-\markboth{\large #1}{}} %
+    \markboth{\large #1}{}} %
 \pdfbookmark[1]{Contents}{Contents} %
 %\begin{center}
 \begin{large}
-\tableofcontents
+    \tableofcontents
 \end{large}
 %\end{center}
 
@@ -157,8 +157,8 @@ urlcolor=blue               % colour of external links
 \clearpage
 
 \input{"../../../vedamantra-book/mantras/DashaShantayah.tex"} 
-
 \closesection
-
 \clearpage
+\chapt{तैत्तिरीय-आरण्यकम्}
+\input{"../../../vedamantra-book/aranyakas/aruNaprashnaH.tex"} 
 \end{document}
