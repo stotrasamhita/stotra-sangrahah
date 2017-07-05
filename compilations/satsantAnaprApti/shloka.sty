@@ -72,12 +72,14 @@
 \newcommand{\resetShloka}{\setcounter{shlokacount}{0}}
 \resetShloka
 
-%Kavya
-\newenvironment{kaavya}{\bgroup\resetShloka}{\egroup}
-
 \newcommand{\twolineshloka}{\@ifstar
                      \twolineshlokaStar%
                      \twolineshlokaNoStar%
+}
+
+\newcommand{\onelineshloka}{\@ifstar
+                     \onelineshlokaStar%
+                     \onelineshlokaNoStar%
 }
 
 \newcommand{\twolineshlokaNoStar}[2]{%
@@ -91,6 +93,15 @@
 \@tempdima=\wd\@tempboxb%
 \hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}\hbox{\box\@tempboxb॥\relax \nextShloka॥}}\hfil}%
 \fi}
+
+\newcommand{\onelineshlokaNoStar}[1]{%
+\vskip\shlokavskip\vsp
+\centerline{#1॥\nextShloka॥}}
+
+\newcommand{\onelineshlokaStar}[1]{%
+\vskip\shlokavskip\vsp
+\centerline{#1।}}
+
 
 \newcommand{\annotwolineshloka}[3]{%
 \vskip\shlokavskip\vsp
@@ -395,6 +406,12 @@
 %\centerline{\Large\bfseries ॥#1॥ }
 \centerline{\Large\fontspec[FakeBold=0.125,FakeStretch=1.08,Script=Devanagari,Mapping=tex-text]{Sanskrit 2003} ॥#1॥ }\nopagebreak[4]
 \smallskip
+}
+
+\newcommand{\uvacha}[1]{
+\medskip
+\centerline{\textbf{#1}}\nopagebreak[4]
+%\smallskip
 }
 
 \RequirePackage{bbding}
