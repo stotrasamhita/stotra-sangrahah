@@ -6,8 +6,8 @@
 
 %%% PAGE SIZE and MARGINS %%%
 \usepackage[paperwidth=126mm,paperheight=168mm,left=5mm,right=5mm,top=15mm,bottom=20mm]{geometry}
-% \setmainfont[Script=Devanagari]{Siddhanta}
-\setmainfont[Script=Devanagari,Mapping=tex-text]{Sanskrit 2003}
+\setmainfont[Script=Devanagari]{Siddhanta}
+% \setmainfont[Script=Devanagari,Mapping=tex-text]{Sanskrit 2003}
 
 %%% HEADERS and FOOTERS %%%
 \usepackage{fancyhdr}
@@ -68,6 +68,7 @@ urlcolor=blue               % colour of external links
 %%% MISCELLANEOUS %%%
 \hbadness=10000
 \vbadness=10000
+\hfuzz=6pt
 %\listfiles
 
 \newcommand{\ar}{\char"0930\char"094D\char"E009}
@@ -119,15 +120,18 @@ urlcolor=blue               % colour of external links
 \renewcommand{\chaptermark}[1]{%
     \markboth{\large #1}{}}
 \fontsize{19pt}{23pt}\selectfont
+\makeatletter
+  \def\vhrulefill#1{\leavevmode\leaders\hrule\@height#1\hfill \kern\z@}
+\makeatother
 \newcounter{anuvakam}
-\newcommand{\anuvakamend}{\refstepcounter{anuvakam}\\[-0.8ex]
-    \rule[0.5ex]{0.93\textwidth}{1.5pt}\bfseries{[\devanumber{\arabic{anuvakam}}]}%\hrulefill
+\newcommand{\anuvakamend}[1][]{\refstepcounter{anuvakam}%[-1ex]
+\newline\ifthenelse{\equal{#1}{}}{\mbox{}}{{\small #1॥}}\nolinebreak[4]\vhrulefill{2.5pt}\raisebox{-4pt}{\bfseries{[\devanumber{\arabic{anuvakam}}]}}%\hrulefill
 }
 \setlength{\emergencystretch}{3em}
 
 % \sect{prArthanA}
 
-ॐ ग॒णानां त्वा ग॒णप॑ति हवामहे क॒विं क॑वी॒नामु॑प॒मश्र॑वस्तमम्। \\
+ॐ ग॒णानां त्वा ग॒णप॑ति हवामहे क॒विं क॑वी॒ना\-मु॑प॒मश्र॑वस्तमम्। \\
 ज्ये॒ष्ठ॒राजं॒ ब्रह्म॑णां ब्रह्मणस्पत॒ आ न॑ शृ॒ण्वन्नू॒तिभि॑ सीद॒ साद॑नम्॥ \\
 ॐ महागणपतये॒ नमः॥ 
 
@@ -137,16 +141,19 @@ urlcolor=blue               % colour of external links
 \input{"../../../vedamantra-book/mantras/RudraPrashnah.tex"} 
 \clearpage
 \input{"../../../vedamantra-book/mantras/ChamakaPrashnah.tex"} 
+
 \closesection
 \clearpage
 \input{"../../../vedamantra-book/mantras/PurushaSuktam.tex"} 
 \input{"../../../vedamantra-book/mantras/NarayanaSuktam.tex"} 
 \input{"../../../vedamantra-book/mantras/VishnuSuktam.tex"} 
+
 \closesection
 \clearpage
 \input{"../../../vedamantra-book/mantras/DurgaSuktam.tex"} 
 \input{"../../../vedamantra-book/mantras/ShriSuktam.tex"} 
 \input{"../../../vedamantra-book/mantras/MedhaSuktam.tex"} 
+
 \closesection
 \clearpage
 \input{"../../../vedamantra-book/mantras/BhagyaSuktam.tex"} 
@@ -154,12 +161,15 @@ urlcolor=blue               % colour of external links
 \input{"../../../vedamantra-book/mantras/NakshatraSuktam.tex"} 
 \input{"../../../vedamantra-book/mantras/AyushyaSuktam.tex"} 
 \input{"../../../vedamantra-book/mantras/PavamanaSuktam.tex"} 
+
 \closesection
 \clearpage
 \input{"../../../vedamantra-book/mantras/MantraPushpam.tex"}
+
 \closesection
 \clearpage
-\input{"../../../vedamantra-book/mantras/DashaShantayah.tex"} 
+\input{"../../../vedamantra-book/mantras/DashaShantayah.tex"}
+
 \closesection
 \clearpage
 \chapt{तैत्तिरीय-आरण्यकम्}
