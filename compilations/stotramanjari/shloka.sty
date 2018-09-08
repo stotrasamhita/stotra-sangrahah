@@ -21,19 +21,23 @@
 \RequirePackage{multicol}
 
 
-\newcommand{\pagenumfont}{\fontspec{Candara}}
+\newcommand{\pagenumfont}{\fontspec{Noto Sans}}
 
 \RequirePackage[titles]{tocloft}
 \renewcommand\contentsname{अनुक्रमणिका}
 \renewcommand{\partname}{विभागः}
 \renewcommand{\thepart}{{\dndigit{\arabic{part}}}}
-\renewcommand{\cftchappagefont}{\fontspec{Candara Bold}}
-\renewcommand{\cftpartpagefont}{\fontspec{Candara Bold}}
-\renewcommand{\cftsecpagefont}{\fontspec{Candara}}
+\renewcommand{\cftchappagefont}{\fontspec{Noto Sans Bold}}
+\renewcommand{\cftpartpagefont}{\fontspec{Noto Sans Bold}}
+\renewcommand{\cftsecpagefont}{\fontspec{Noto Sans}}
 \renewcommand{\cftpartfont}{\LARGE\fontspec[Script=Devanagari]{Sanskrit 2003}}
 \renewcommand{\cftchapfont}{\Large\fontspec[Script=Devanagari]{Sanskrit 2003}}
 \renewcommand{\cftsecfont}{\fontspec[Script=Devanagari]{Sanskrit 2003}}
 \renewcommand{\cfttoctitlefont}{\LARGE\fontspec[Script=Devanagari]{Sanskrit 2003}}
+%\renewcommand{\cftpartfont}{\LARGE\fontspec[Script=Devanagari]{Siddhanta}}
+%\renewcommand{\cftchapfont}{\Large\fontspec[Script=Devanagari]{Siddhanta}}
+%\renewcommand{\cftsecfont}{\fontspec[Script=Devanagari]{Siddhanta}}
+%\renewcommand{\cfttoctitlefont}{\LARGE\fontspec[Script=Devanagari]{Siddhanta}}
 %\newcommand{\s}{~$\cdot$}
 %\newcommand{\vsp}{\vspace{\stretch{1}}}
 \newcommand{\vsp}{\medskip}
@@ -88,10 +92,10 @@
 \setbox\@tempboxb=\hbox{#2}%
 \ifdim\wd\@tempboxa>\wd\@tempboxb%
 \@tempdima=\wd\@tempboxa%
-\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa ।}\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}॥\relax \nextShloka॥}}\hfil}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa ।}\vskip-2pt\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}॥\relax \nextShloka॥}}\hfil}%
 \else%
 \@tempdima=\wd\@tempboxb%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}\hbox{\box\@tempboxb॥\relax \nextShloka॥}}\hfil}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}\vskip-2pt\hbox{\box\@tempboxb॥\relax \nextShloka॥}}\hfil}%
 \fi}
 
 \newcommand{\onelineshlokaNoStar}[1]{%
@@ -109,10 +113,10 @@
 \setbox\@tempboxb=\hbox{#2}%
 \ifdim\wd\@tempboxa>\wd\@tempboxb%
 \@tempdima=\wd\@tempboxa%
-\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa ।}\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}॥\relax \nextShloka॥\footnotesize{#3}\hspace{-3ex}}}\hfil}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa ।}\vskip-2pt\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}॥\relax \nextShloka॥\footnotesize{#3}\hspace{-3ex}}}\hfil}%
 \else%
 \@tempdima=\wd\@tempboxb%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}\hbox{\box\@tempboxb॥\relax \nextShloka॥\footnotesize{#3}\hspace{-3ex}}}\hfil}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}\vskip-2pt\hbox{\box\@tempboxb॥\relax \nextShloka॥\footnotesize{#3}\hspace{-3ex}}}\hfil}%
 \fi}
 
 \newcommand{\twolineshlokaStar}[2]{%
@@ -121,10 +125,10 @@
 \setbox\@tempboxb=\hbox{#2}%
 \ifdim\wd\@tempboxa>\wd\@tempboxb%
 \@tempdima=\wd\@tempboxa%
-\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa ।}\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}॥}}\hfil}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa ।}\vskip-2pt\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}॥}}\hfil}%
 \else%
 \@tempdima=\wd\@tempboxb%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}\hbox{\box\@tempboxb॥}}\hfil}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}\vskip-2pt\hbox{\box\@tempboxb॥}}\hfil}%
 \fi}
 
 \newcommand{\threelineshloka}{\@ifstar
@@ -140,25 +144,25 @@
 \ifdim\wd\@tempboxa>\wd\@tempboxb%
 \@tempdima=\wd\@tempboxa%
 \ifdim\wd\@tempboxa>\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa ।}%
-\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}।}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa ।}\vskip-2pt%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}।}\vskip-2pt%
 \hbox{\hbox to \@tempdima{\unhbox\@tempboxc}॥}}\hfil}%
 \else%
 \@tempdima=\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}%
-\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}।}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}\vskip-2pt%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}।}\vskip-2pt%
 \hbox{\box\@tempboxc॥}}\hfil}%
 \fi%
 \else%
 \@tempdima=\wd\@tempboxb%
 \ifdim\wd\@tempboxb>\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}%
-\hbox{\hbox{\box\@tempboxb।}}
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}\vskip-2pt%
+\hbox{\hbox{\box\@tempboxb।}}\vskip-2pt
 \hbox{\hbox to \@tempdima{\unhbox\@tempboxc}॥}}\hfil}%
 \else%
 \@tempdima=\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}%
-\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}।}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}\vskip-2pt%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}।}\vskip-2pt%
 \hbox{\box\@tempboxc॥}}\hfil}%
 \fi%
 \fi}
@@ -172,25 +176,25 @@
 \ifdim\wd\@tempboxa>\wd\@tempboxb%
 \@tempdima=\wd\@tempboxa%
 \ifdim\wd\@tempboxa>\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa ।}%
-\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}।}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa ।}\vskip-2pt%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}।}\vskip-2pt%
 \hbox{\hbox to \@tempdima{\unhbox\@tempboxc}॥\relax \nextShloka॥}}\hfil}%
 \else%
 \@tempdima=\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}%
-\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}।}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}\vskip-2pt%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}।}\vskip-2pt%
 \hbox{\box\@tempboxc॥\relax \nextShloka॥}}\hfil}%
 \fi%
 \else%
 \@tempdima=\wd\@tempboxb%
 \ifdim\wd\@tempboxb>\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}%
-\hbox{\hbox{\box\@tempboxb।}}
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}\vskip-2pt%
+\hbox{\hbox{\box\@tempboxb।}}\vskip-2pt
 \hbox{\hbox to \@tempdima{\unhbox\@tempboxc}॥\relax \nextShloka॥}}\hfil}%
 \else%
 \@tempdima=\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}%
-\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}।}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}\vskip-2pt%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}।}\vskip-2pt%
 \hbox{\box\@tempboxc॥\relax \nextShloka॥}}\hfil}%
 \fi%
 \fi}
@@ -210,30 +214,30 @@
 \@tempdima=\wd\@tempboxa%
 \ifdim\wd\@tempboxc>\wd\@tempboxd%
 \@tempdimb=\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}%
-\hbox{\hskip\shlokaspaceskip\box\@tempboxc ।}%
-\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}\vskip-2pt%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc ।}\vskip-2pt%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}\vskip-2pt%
 \hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}॥\relax \nextShloka॥}}\hfil}%
 \else%
 \@tempdimb=\wd\@tempboxd%
-\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}%
-\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}।}%
-\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}\vskip-2pt%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}।}\vskip-2pt%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}\vskip-2pt%
 \hbox{\hskip\shlokaspaceskip\box\@tempboxd ॥\relax \nextShloka॥}}\hfil}%
 \fi%
 \else%
 \@tempdima=\wd\@tempboxb%
 \ifdim\wd\@tempboxc>\wd\@tempboxd%
 \@tempdimb=\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}%
-\hbox{\hskip\shlokaspaceskip\box\@tempboxc ।}%
-\hbox{\box\@tempboxb}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}\vskip-2pt%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc ।}\vskip-2pt%
+\hbox{\box\@tempboxb}\vskip-2pt%
 \hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}॥\relax \nextShloka॥}}\hfil}%
 \else%
 \@tempdimb=\wd\@tempboxd%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}%
-\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}।}%
-\hbox{\box\@tempboxb}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}\vskip-2pt%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}।}\vskip-2pt%
+\hbox{\box\@tempboxb}\vskip-2pt%
 \hbox{\hskip\shlokaspaceskip\box\@tempboxd ॥\relax \nextShloka॥}}\hfil}%
 \fi%
 \fi}
@@ -248,30 +252,30 @@
 \@tempdima=\wd\@tempboxa%
 \ifdim\wd\@tempboxc>\wd\@tempboxd%
 \@tempdimb=\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}%
-\hbox{\hskip\shlokaspaceskip\box\@tempboxc ।}%
-\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}\vskip-2pt%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc ।}\vskip-2pt%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}\vskip-2pt%
 \hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}॥}}\hfil}%
 \else%
 \@tempdimb=\wd\@tempboxd%
-\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}%
-\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}।}%
-\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}\vskip-2pt%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}।}\vskip-2pt%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}\vskip-2pt%
 \hbox{\hskip\shlokaspaceskip\box\@tempboxd ॥}}\hfil}%
 \fi%
 \else%
 \@tempdima=\wd\@tempboxb%
 \ifdim\wd\@tempboxc>\wd\@tempboxd%
 \@tempdimb=\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}%
-\hbox{\hskip\shlokaspaceskip\box\@tempboxc ।}%
-\hbox{\box\@tempboxb}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}\vskip-2pt%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc ।}\vskip-2pt%
+\hbox{\box\@tempboxb}\vskip-2pt%
 \hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}॥}}\hfil}%
 \else%
 \@tempdimb=\wd\@tempboxd%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}%
-\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}।}%
-\hbox{\box\@tempboxb}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}\vskip-2pt%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}।}\vskip-2pt%
+\hbox{\box\@tempboxb}\vskip-2pt%
 \hbox{\hskip\shlokaspaceskip\box\@tempboxd ॥}}\hfil}%
 \fi%
 \fi}
@@ -286,30 +290,30 @@
 \@tempdima=\wd\@tempboxa%
 \ifdim\wd\@tempboxc>\wd\@tempboxd%
 \@tempdimb=\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}%
-\hbox{\hskip\shlokaspaceskip\box\@tempboxc ।}%
-\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}\vskip-2pt%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc ।}\vskip-2pt%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}\vskip-2pt%
 \hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}॥\relax \nextShloka॥\footnotesize{#5}\hspace{-3ex}}}\hfil}%
 \else%
 \@tempdimb=\wd\@tempboxd%
-\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}%
-\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}।}%
-\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}\vskip-2pt%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}।}\vskip-2pt%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}\vskip-2pt%
 \hbox{\hskip\shlokaspaceskip\box\@tempboxd ॥\relax \nextShloka॥\footnotesize{#5}\hspace{-3ex}}}\hfil}%
 \fi%
 \else%
 \@tempdima=\wd\@tempboxb%
 \ifdim\wd\@tempboxc>\wd\@tempboxd%
 \@tempdimb=\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}%
-\hbox{\hskip\shlokaspaceskip\box\@tempboxc ।}%
-\hbox{\box\@tempboxb}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}\vskip-2pt%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc ।}\vskip-2pt%
+\hbox{\box\@tempboxb}\vskip-2pt%
 \hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}॥\relax \nextShloka॥\footnotesize{#5}\hspace{-3ex}}}\hfil}%
 \else%
 \@tempdimb=\wd\@tempboxd%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}%
-\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}।}%
-\hbox{\box\@tempboxb}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}\vskip-2pt%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}।}\vskip-2pt%
+\hbox{\box\@tempboxb}\vskip-2pt%
 \hbox{\hskip\shlokaspaceskip\box\@tempboxd ॥\relax \nextShloka॥\footnotesize{#5}\hspace{-3ex}}}\hfil}%
 \fi%
 \fi}
@@ -324,30 +328,30 @@
 \@tempdima=\wd\@tempboxa%
 \ifdim\wd\@tempboxc>\wd\@tempboxd%
 \@tempdimb=\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}%
-\hbox{\hskip\shlokaspaceskip\box\@tempboxc}%
-\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}\vskip-2pt%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc}\vskip-2pt%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}\vskip-2pt%
 \hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}}}\hfil}%
 \else%
 \@tempdimb=\wd\@tempboxd%
-\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}%
-\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}}%
-\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}\vskip-2pt%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}}\vskip-2pt%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}\vskip-2pt%
 \hbox{\hskip\shlokaspaceskip\box\@tempboxd}}\hfil}%
 \fi%
 \else%
 \@tempdima=\wd\@tempboxb%
 \ifdim\wd\@tempboxc>\wd\@tempboxd%
 \@tempdimb=\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}%
-\hbox{\hskip\shlokaspaceskip\box\@tempboxc}%
-\hbox{\box\@tempboxb}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}\vskip-2pt%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc}\vskip-2pt%
+\hbox{\box\@tempboxb}\vskip-2pt%
 \hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}}}\hfil}%
 \else%
 \@tempdimb=\wd\@tempboxd%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}%
-\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}}%
-\hbox{\box\@tempboxb}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}\vskip-2pt%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}}\vskip-2pt%
+\hbox{\box\@tempboxb}\vskip-2pt%
 \hbox{\hskip\shlokaspaceskip\box\@tempboxd}}\hfil}%
 \fi%
 \fi}
@@ -360,13 +364,13 @@
 \ifdim\wd\@tempboxa>\wd\@tempboxb%
 \@tempdima=\wd\@tempboxa%
 \ifdim\wd\@tempboxa>\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}%
 \hbox{\box\@tempboxb}%
 \hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}%
 \hbox{\hbox to \@tempdimb{\unhbox\@tempboxc}}}\hfil}%
 \else%
 \@tempdimb=\wd\@tempboxd%
-\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}%
 \hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}}%
 \hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}%
 \hbox{\hskip\shlokaspaceskip\box\@tempboxd}}\hfil}%
@@ -375,13 +379,13 @@
 \@tempdima=\wd\@tempboxb%
 \ifdim\wd\@tempboxc>\wd\@tempboxd%
 \@tempdimb=\wd\@tempboxc%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}%
 \hbox{\hskip\shlokaspaceskip\box\@tempboxc}%
 \hbox{\box\@tempboxb}%
 \hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}}}\hfil}%
 \else%
 \@tempdimb=\wd\@tempboxd%
-\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}%
+\vfil\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}%
 \hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}}%
 \hbox{\box\@tempboxb}%
 \hbox{\hskip\shlokaspaceskip\box\@tempboxd}}\hfil}%
@@ -389,13 +393,20 @@
 \fi}
 
 \newcommand{\sect}[1]{%
+%\section[#1]{\fontspec[FakeBold=1.0,FakeStretch=1.0,Script=Devanagari,Mapping=tex-text]{Siddhanta}॥#1॥}%
 \section[#1]{\fontspec[FakeBold=1.0,FakeStretch=1.0,Script=Devanagari,Mapping=tex-text]{Sanskrit 2003}॥#1॥}%
 }
 
 \newcommand{\chapt}[1]{%
+%\chapter[#1]{\fontspec[FakeBold=1.0,FakeStretch=1.0,Script=Devanagari,Mapping=tex-text]{Siddhanta}॥#1॥}%
 \chapter[#1]{\fontspec[FakeBold=1.0,FakeStretch=1.0,Script=Devanagari,Mapping=tex-text]{Sanskrit 2003}॥#1॥}%
 }
 
+\let\origclearpage\clearpage
+\renewcommand{\clearpage}{
+    \vfill
+    \origclearpage
+}
 \let\origdoublepage\cleardoublepage
 \newcommand{\clearemptydoublepage}{%
   {\pagestyle{empty}\origdoublepage}%
@@ -405,12 +416,14 @@
 \medskip
 %\centerline{\Large\bfseries ॥#1॥ }
 \centerline{\Large\fontspec[FakeBold=0.125,FakeStretch=1.08,Script=Devanagari,Mapping=tex-text]{Sanskrit 2003} ॥#1॥ }\nopagebreak[4]
+%\centerline{\Large\fontspec[FakeBold=1.0,FakeStretch=1.2,Script=Devanagari,Mapping=tex-text]{Siddhanta} ॥#1॥ }\nopagebreak[4]
 \smallskip
 }
 
 \newcommand{\uvacha}[1]{
 \medskip
 \centerline{\textbf{#1}}\nopagebreak[4]
+%\centerline{\fontspec[FakeBold=1.0,Script=Devanagari,Mapping=tex-text]{Siddhanta}{#1}}\nopagebreak[4]
 %\smallskip
 }
 
