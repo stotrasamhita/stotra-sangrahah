@@ -9,7 +9,7 @@ jobname=`echo $fpath | sed 's/.tex//;s@../stotras/@@'`
 echo "PDF target        : $jobname.pdf"
 echo "StotraSamhita URL : $SSURL"
 mkdir -p `dirname $jobname`
-if [[ $fpath -nt $jobname.pdf ]] || [[ stotra-kindle-template.tex -nt $jobname.pdf ]] 
+if [[ $fpath -nt $jobname.pdf ]] || [[ stotra-kindle-template.tex -nt $jobname.pdf ]] || [[ shloka.sty -nt $jobname.pdf ]] 
 then
 echo Rebuilding $jobname.pdf... > /dev/stderr
 echo Rebuilding $jobname.pdf...
