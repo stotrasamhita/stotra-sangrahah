@@ -6,7 +6,7 @@
 \newbool{print}
 
 \setbool{kindle}{true}
-\setbool{print}{false}
+%\setbool{print}{true}
 %Override print boolean if kindle is true
 \ifbool{kindle}{\setbool{print}{false}}{}
 \ifbool{kindle}{\usepackage[paperwidth=126mm,paperheight=168mm,left=4mm,right=4mm,top=9mm,bottom=10mm]{geometry}
@@ -19,7 +19,7 @@
 \addtolength{\oddsidemargin}{0.5cm}}{}
 
 \begin{document}
-\newcommand{\titletext}{स्तोत्रमञ्जरी}
+\newcommand{\titletext}{स्तोत्रमञ्जरी-4}
 \input{frontmatter}
 
 
@@ -39,7 +39,7 @@
 \setlength{\parindent}{0pt}
 \renewcommand{\chaptermark}[1]{%
 \markboth{\large #1}{}}
-\input{stotras5}
+\input{stotras4}
 \newpage\mbox{}
 \clearemptydoublepage
 %\mbox{}\clearemptydoublepage
