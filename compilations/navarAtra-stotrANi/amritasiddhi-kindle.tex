@@ -1,0 +1,39 @@
+% !TeX program = XeLaTeX
+% !TeX root = navaratristotraNi.tex
+\documentclass[oneside,12pt]{book}
+\usepackage{etoolbox}
+\newbool{kindle}
+\newbool{print}
+
+\setbool{kindle}{true}
+\setbool{print}{false}
+%Override print boolean if kindle is true
+\ifbool{kindle}{\setbool{print}{false}}{}
+\ifbool{kindle}{\usepackage[paperwidth=126mm,paperheight=168mm,left=4mm,right=4mm,top=9mm,bottom=10mm]{geometry}
+\addtolength{\headsep}{-4mm}}{\usepackage[top=1.5cm, bottom=1.8cm, left=1.5cm, right=1.5cm,paperwidth=148mm,paperheight=210mm]{geometry}}
+\input{preamble}
+\begin{document}
+\newcommand{\titletext}{अमृतसिद्धि-पारायणम्}
+\input{frontmatter}
+
+
+\renewcommand{\partname}{विभागः}
+\renewcommand{\thepart}{{\dndigit{\arabic{part}}}}
+\Large
+\setmainfont[Script=Devanagari,Mapping=tex-text]{Sanskrit 2003}
+%\setmainfont[Script=Devanagari,Mapping=tex-text,FakeStretch=1.08]{Sanskrit 2003}
+%\setmainfont[Script=Devanagari,Mapping=tex-text]{Chandas}
+%\setmainfont[Script=Devanagari,Mapping=tex-text]{Siddhanta}
+%\setmainfont[Script=Devanagari,Mapping=tex-text]{Sanskrit 2003}
+%The following alters word spacing to ensure that words aren't too close to one another!
+\setcounter{page}{0}
+\pagenumbering{arabic}
+\setlength{\parindent}{0pt}
+\renewcommand{\chaptermark}[1]{%
+\markboth{\large #1}{}}
+\setlength{\emergencystretch}{3em}
+\input{stotras-amritasiddhi}
+\newpage\mbox{}
+\clearemptydoublepage
+%\mbox{}\clearemptydoublepage
+\end{document}
