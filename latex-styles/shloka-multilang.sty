@@ -1,0 +1,764 @@
+%% Style file
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{shloka-multilang}[2020/06/13 Multi-lingual shloka typesetting]
+
+\RequirePackage[no-math]{fontspec}
+\defaultfontfeatures{Scale=MatchLowercase,Mapping=tex-text}
+\RequirePackage{pdfpages}
+\RequirePackage{titlesec}
+\RequirePackage{xunicode}
+\RequirePackage{xltxtra}
+\RequirePackage{xcolor}
+\RequirePackage{needspace}
+\RequirePackage{pagecolor}
+\RequirePackage{fontawesome}
+\RequirePackage{etoolbox}
+\setsansfont{Gentium Basic}
+% \RequirePackage{wasysym}
+\RequirePackage{array}
+\RequirePackage{multirow}
+\RequirePackage{multicol}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+\hbadness=10000
+\vbadness=10000
+\hfuzz=6pt
+\setlength{\parindent}{0pt}
+\setlength{\emergencystretch}{6em}
+
+
+%%%%%%% Numbers and counters %%%%%%%
+\newcount\num
+\newcount\tempone \newcount\temptwo
+\newcommand{\devanumber}[1]{%
+\num=#1\devanumberrecurse}
+
+\newcommand{\devanumberrecurse}{%
+{\tempone=\num
+\ifnum\num > 0 
+    \divide \num by 10%
+    \temptwo=\num \multiply\temptwo by -10%
+    \devanumberrecurse%
+    \advance\tempone by \temptwo%
+    \devadigit
+\fi
+}}
+
+\newcommand{\devadigit}{%
+\ifcase\tempone०\or१\or२\or३\or४\or५\or६\or७\or८\or९\fi%\number\tempone%
+}
+
+\newcommand{\dndigit}[1]{%
+\ifcase#1०\or१\or२\or३\or४\or५\or६\or७\or८\or९\fi%
+}
+
+% Booleans
+\newbool{dng}
+\newbool{grantha}
+\newbool{tamil}
+\newbool{tamilgrantha}
+\newbool{telugu}
+\newbool{kannada}
+\newbool{malayalam}
+\newbool{hindi}
+\newbool{iast}
+
+\setbool{dng}{false}
+\setbool{grantha}{false}
+\setbool{tamil}{false}
+\setbool{tamilgrantha}{false}
+\setbool{telugu}{false}
+\setbool{kannada}{false}
+\setbool{malayalam}{false}
+\setbool{hindi}{false}
+\setbool{iast}{false}
+
+%% MULTI-LINGUAL FEATURES
+\DeclareOption{dng}{\setbool{dng}{true}}
+\DeclareOption{grantha}{\setbool{grantha}{true}}
+\DeclareOption{tamil}{\setbool{tamil}{true}}
+\DeclareOption{tamilgrantha}{\setbool{tamilgrantha}{true}}
+\DeclareOption{telugu}{\setbool{telugu}{true}}
+\DeclareOption{kannada}{\setbool{kannada}{true}}
+\DeclareOption{malayalam}{\setbool{malayalam}{true}}
+\DeclareOption{hindi}{\setbool{hindi}{true}}
+\DeclareOption{iast}{\setbool{iast}{true}}
+\DeclareOption*{\PackageWarning{shloka-multilang}{Unknown ‘\CurrentOption’ for shloka-multilang}}
+\ProcessOptions\relax
+
+%% DIMENSIONS AND BOXES
+\newdimen\@tempdima
+\newdimen\@tempdimb
+\newdimen\shlokaspaceskip
+\shlokaspaceskip=2.4em
+\newdimen\shlokavskip
+\shlokavskip=0em
+\newcommand{\shlokamidskip}{\vskip -1.6pt plus 0.1em}
+\newcommand{\shlokatopskip}{\vskip 0.2em plus 0.5em minus 0.2em}
+\newbox\@tempboxa
+\newbox\@tempboxb
+\newbox\@tempboxc
+\newbox\@tempboxd
+
+\newcommand{\vsp}{\medskip}
+
+% DANDAS
+\newcommand{\ddanda}{॥}
+\newcommand{\danda}{।}
+
+% Assign specific unicode characters
+
+\RequirePackage{newunicodechar}
+\let\xnewunicodechar\newunicodechar
+\AfterEndPreamble{\let\newunicodechar\xnewunicodechar}
+\newunicodechar{—}{\textsf{---}}
+\newunicodechar{–}{\textsf{--}}
+\newunicodechar{²}{\textsuperscript{2}}
+\newunicodechar{³}{\textsuperscript{3}}
+\newunicodechar{⁴}{\textsuperscript{4}}
+\newunicodechar{꞉}{:}
+\newunicodechar{ʼ}{'}
+
+% Select Fonts
+
+\newcommand{\dngfont}{\fontspec[Script=Devanagari,Scale=1.125,AutoFakeBold=2.5]{Sanskrit 2003}}
+\newcommand{\tamilfont}{\fontspec[Script=Tamil,FakeStretch=0.85,AutoFakeBold=2.5]{Noto Serif Tamil}}
+\newcommand{\tamilgranthafont}{\fontspec[Script=Malayalam,FakeStretch=0.9,AutoFakeBold=2.5]{Agastya Extended Tamil}}
+\newcommand{\telugufont}{\fontspec[Script=Telugu,AutoFakeBold=2.5]{Mandali}}
+\newcommand{\kannadafont}{\fontspec[Script=Kannada,AutoFakeBold=2.5]{Nudi Unicode 01}}
+\newcommand{\granthafont}{\fontspec[Script=Grantha,FakeStretch=0.9,AutoFakeBold=2.5]{Noto Serif Grantha}}
+\newcommand{\malayalamfont}{\fontspec[Script=Malayalam,FakeStretch=0.9,AutoFakeBold=2.5]{Noto Serif Malayalam}}
+\newcommand{\hindifont}{\fontspec[Script=Devanagari,Scale=1.125,AutoFakeBold=2.5]{Sanskrit 2003}}
+\newcommand{\iastfont}{\fontspec[AutoFakeBold=2.5]{Gentium}}
+
+% Font family commands
+% \spaceskip=2\fontdimen2\font plus 1\fontdimen3\font minus 1.25\fontdimen4\font
+\newcommand{\dng}[1]{\texorpdfstring{{\dngfont #1}}{#1}}
+\newcommand{\dngfamily}{%
+\dngfont
+\renewcommand{\devanumberrecurse}{%
+{\tempone=\num
+\ifnum\num > 0 
+    \divide \num by 10%
+    \temptwo=\num \multiply\temptwo by -10%
+    \devanumberrecurse%
+    \advance\tempone by \temptwo%
+    \devadigit
+\fi
+}}
+
+\renewcommand{\devadigit}{%
+\ifcase\tempone०\or१\or२\or३\or४\or५\or६\or७\or८\or९\fi%\number\tempone%
+}
+
+\renewcommand{\ddanda}{॥}
+\renewcommand{\danda}{।}
+}
+
+\newcommand{\hindi}[1]{\texorpdfstring{{\hindifont #1}}{#1}}
+\newcommand{\hindifamily}{%
+\hindifont
+\renewcommand{\devanumberrecurse}{%
+{\tempone=\num
+\ifnum\num > 0 
+    \divide \num by 10%
+    \temptwo=\num \multiply\temptwo by -10%
+    \devanumberrecurse%
+    \advance\tempone by \temptwo%
+    \devadigit
+\fi
+}}
+
+\renewcommand{\devadigit}{%
+\ifcase\tempone०\or१\or२\or३\or४\or५\or६\or७\or८\or९\fi%\number\tempone%
+}
+
+\renewcommand{\ddanda}{॥}
+\renewcommand{\danda}{।}
+}
+
+\newcommand{\tamil}[1]{\texorpdfstring{{\tamilfont #1}}{#1}}
+\newcommand{\tamilfamily}{%
+\tamilfont
+\renewcommand{\devanumberrecurse}{%
+{\tempone=\num
+\ifnum\num > 0 
+    \divide \num by 10%
+    \temptwo=\num \multiply\temptwo by -10%
+    \devanumberrecurse%
+    \advance\tempone by \temptwo%
+    \devadigit
+\fi
+}}
+
+\renewcommand{\devadigit}{%
+\ifcase\tempone0\or1\or2\or3\or4\or5\or6\or7\or8\or9\fi%\number\tempone%
+}
+
+\renewcommand{\danda}{|}
+\renewcommand{\ddanda}{|\hspace{-0.5ex}|}
+}
+
+\newcommand{\tamilgrantha}[1]{\texorpdfstring{{\tamilgranthafont #1}}{#1}}
+\newcommand{\tamilgranthafamily}{%
+\tamilgranthafont
+\renewcommand{\devanumberrecurse}{%
+{\tempone=\num
+\ifnum\num > 0 
+    \divide \num by 10%
+    \temptwo=\num \multiply\temptwo by -10%
+    \devanumberrecurse%
+    \advance\tempone by \temptwo%
+    \devadigit
+\fi
+}}
+
+\renewcommand{\devadigit}{%
+\ifcase\tempone0\or1\or2\or3\or4\or5\or6\or7\or8\or9\fi%\number\tempone%
+}
+
+\renewcommand{\danda}{|}
+\renewcommand{\ddanda}{|\hspace{-0.5ex}|}
+}
+
+\newcommand{\grantha}[1]{\texorpdfstring{{\granthafont #1}}{#1}}
+\newcommand{\granthafamily}{%
+\granthafont
+\renewcommand{\devanumberrecurse}{%
+{\tempone=\num
+\ifnum\num > 0 
+    \divide \num by 10%
+    \temptwo=\num \multiply\temptwo by -10%
+    \devanumberrecurse%
+    \advance\tempone by \temptwo%
+    \devadigit
+\fi
+}}
+
+\renewcommand{\devadigit}{%
+\ifcase\tempone௦\or௧\or௨\or௩\or௪\or௫\or௬\or௭\or௮\or௯\fi%\number\tempone%
+}
+
+\renewcommand{\danda}{|}
+\renewcommand{\ddanda}{|\hspace{-0.5ex}|}
+}
+
+\newcommand{\telugu}[1]{\texorpdfstring{{\telugufont #1}}{#1}}
+\newcommand{\telugufamily}{%
+\telugufont
+\renewcommand{\devanumberrecurse}{%
+{\tempone=\num
+\ifnum\num > 0 
+    \divide \num by 10%
+    \temptwo=\num \multiply\temptwo by -10%
+    \devanumberrecurse%
+    \advance\tempone by \temptwo%
+    \devadigit
+\fi
+}}
+
+\renewcommand{\devadigit}{%
+\ifcase\tempone౦\or౧\or౨\or౩\or౪\or౫\or౬\or౭\or౮\or౯\fi%\number\tempone%
+}
+
+\renewcommand{\danda}{{\scriptsize|}}
+\renewcommand{\ddanda}{{\scriptsize|\hspace{0.15ex}|\hspace{0.2ex}}}
+}
+
+\newcommand{\kannada}[1]{\texorpdfstring{%
+{\kannadafont #1}}{#1}}
+\newcommand{\kannadafamily}{%
+\kannadafont
+\renewcommand{\devanumberrecurse}{%
+{\tempone=\num
+\ifnum\num > 0 
+    \divide \num by 10%
+    \temptwo=\num \multiply\temptwo by -10%
+    \devanumberrecurse%
+    \advance\tempone by \temptwo%
+    \devadigit
+\fi
+}}
+
+\renewcommand{\devadigit}{%
+\ifcase\tempone೦\or೧\or೨\or೩\or೪\or೫\or೬\or೭\or೮\or೯\fi%\number\tempone%
+}
+
+\renewcommand{\danda}{{\Large|}}
+\renewcommand{\ddanda}{{\Large|\hspace{0.1ex}|\hspace{0.4ex}}}
+}
+
+\newcommand{\malayalam}[1]{\texorpdfstring{%
+{\malayalamfont #1}}{#1}}
+\newcommand{\malayalamfamily}{%
+\malayalamfont
+\renewcommand{\devanumberrecurse}{%
+{\tempone=\num
+\ifnum\num > 0 
+    \divide \num by 10%
+    \temptwo=\num \multiply\temptwo by -10%
+    \devanumberrecurse%
+    \advance\tempone by \temptwo%
+    \devadigit
+\fi
+}}
+
+\renewcommand{\devadigit}{%
+\ifcase\tempone൦\or൧\or൨\or൩\or൪\or൫\or൬\or൭\or൮\or൯\fi%\number\tempone%
+}
+
+\renewcommand{\danda}{{|}}
+\renewcommand{\ddanda}{{|\hspace{-0.1ex}|}}
+}
+
+\newcommand{\iast}[1]{\texorpdfstring{%
+{\iastfont #1}}{#1}}
+\newcommand{\iastfamily}{%
+\iastfont
+\renewcommand{\devanumberrecurse}{%
+{\tempone=\num
+\ifnum\num > 0 
+    \divide \num by 10%
+    \temptwo=\num \multiply\temptwo by -10%
+    \devanumberrecurse%
+    \advance\tempone by \temptwo%
+    \devadigit
+\fi
+}}
+
+\renewcommand{\devadigit}{%
+\ifcase\tempone0\or1\or2\or3\or4\or5\or6\or7\or8\or9\fi%\number\tempone%
+}
+
+\renewcommand{\danda}{{\large|}}
+\renewcommand{\ddanda}{{\large||}}
+}
+
+%Shloka Counter
+\newcounter{shlokacount}
+\newcommand{\nextShloka}{\stepcounter{shlokacount}\devanumber\c@shlokacount\relax}
+\newcommand{\resetShloka}{\setcounter{shlokacount}{0}}
+\resetShloka
+
+%% FORMATTED SHLOKAS: TWOLINE SHLOKAS
+\newcommand{\twolineshloka}{\@ifstar
+                     \twolineshlokaStar%
+                     \twolineshlokaNoStar%
+}
+
+\newcommand{\onelineshloka}{\@ifstar
+                     \onelineshlokaStar%
+                     \onelineshlokaNoStar%
+}
+
+\newcommand{\twolineshlokaNoStar}[2]{%
+\vskip\shlokavskip\vsp
+\setbox\@tempboxa=\hbox{#1}%
+\setbox\@tempboxb=\hbox{#2}%
+\ifdim\wd\@tempboxa>\wd\@tempboxb%
+\@tempdima=\wd\@tempboxa%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa {\danda}}\shlokamidskip\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}{\ddanda}\relax \nextShloka{\ddanda}}}\hfil}%
+\else%
+\@tempdima=\wd\@tempboxb%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}{\danda}}\shlokamidskip\hbox{\box\@tempboxb{\ddanda}\relax \nextShloka{\ddanda}}}\hfil}%
+\fi}
+
+\newcommand{\onelineshlokaNoStar}[1]{%
+\vskip\shlokavskip\vsp
+\centerline{#1{\ddanda}\nextShloka{\ddanda}}}
+
+\newcommand{\onelineshlokaStar}[1]{%
+\vskip\shlokavskip\vsp
+\centerline{#1{\danda}}}
+
+
+\newcommand{\annotwolineshloka}[3]{%
+\vskip\shlokavskip\vsp
+\setbox\@tempboxa=\hbox{#1}%
+\setbox\@tempboxb=\hbox{#2}%
+\ifdim\wd\@tempboxa>\wd\@tempboxb%
+\@tempdima=\wd\@tempboxa%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa {\danda}}\shlokamidskip\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}{\ddanda}\relax \nextShloka{\ddanda}\footnotesize{#3}\hspace{-3ex}}}\hfil}%
+\else%
+\@tempdima=\wd\@tempboxb%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}{\danda}}\shlokamidskip\hbox{\box\@tempboxb{\ddanda}\relax \nextShloka{\ddanda}\footnotesize{#3}\hspace{-3ex}}}\hfil}%
+\fi}
+
+\newcommand{\twolineshlokaStar}[2]{%
+\vskip\shlokavskip\vsp
+\setbox\@tempboxa=\hbox{#1}%
+\setbox\@tempboxb=\hbox{#2}%
+\ifdim\wd\@tempboxa>\wd\@tempboxb%
+\@tempdima=\wd\@tempboxa%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa {\danda}}\shlokamidskip\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}{\ddanda}}}\hfil}%
+\else%
+\@tempdima=\wd\@tempboxb%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}{\danda}}\shlokamidskip\hbox{\box\@tempboxb{\ddanda}}}\hfil}%
+\fi}
+
+\newcommand{\threelineshloka}{\@ifstar
+                     \threelineshlokaStar%
+                     \threelineshlokaNoStar%
+}
+
+\newcommand{\threelineshlokaStar}[3]{%
+\vskip\shlokavskip\vsp
+\setbox\@tempboxa=\hbox{#1}%
+\setbox\@tempboxb=\hbox{#2}%
+\setbox\@tempboxc=\hbox{#3}%
+\ifdim\wd\@tempboxa>\wd\@tempboxb%
+\@tempdima=\wd\@tempboxa%
+\ifdim\wd\@tempboxa>\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa {\danda}}\shlokamidskip%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}{\danda}}\shlokamidskip%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxc}{\ddanda}}}\hfil}%
+\else%
+\@tempdima=\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}{\danda}}\shlokamidskip%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}{\danda}}\shlokamidskip%
+\hbox{\box\@tempboxc{\ddanda}}}\hfil}%
+\fi%
+\else%
+\@tempdima=\wd\@tempboxb%
+\ifdim\wd\@tempboxb>\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}{\danda}}\shlokamidskip%
+\hbox{\hbox{\box\@tempboxb{\danda}}}\shlokamidskip
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxc}{\ddanda}}}\hfil}%
+\else%
+\@tempdima=\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}{\danda}}\shlokamidskip%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}{\danda}}\shlokamidskip%
+\hbox{\box\@tempboxc{\ddanda}}}\hfil}%
+\fi%
+\fi}
+
+
+\newcommand{\threelineshlokaNoStar}[3]{%
+\vskip\shlokavskip\vsp
+\setbox\@tempboxa=\hbox{#1}%
+\setbox\@tempboxb=\hbox{#2}%
+\setbox\@tempboxc=\hbox{#3}%
+\ifdim\wd\@tempboxa>\wd\@tempboxb%
+\@tempdima=\wd\@tempboxa%
+\ifdim\wd\@tempboxa>\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa {\danda}}\shlokamidskip%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}{\danda}}\shlokamidskip%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxc}{\ddanda}\relax \nextShloka{\ddanda}}}\hfil}%
+\else%
+\@tempdima=\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}{\danda}}\shlokamidskip%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}{\danda}}\shlokamidskip%
+\hbox{\box\@tempboxc{\ddanda}\relax \nextShloka{\ddanda}}}\hfil}%
+\fi%
+\else%
+\@tempdima=\wd\@tempboxb%
+\ifdim\wd\@tempboxb>\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}{\danda}}\shlokamidskip%
+\hbox{\hbox{\box\@tempboxb{\danda}}}\shlokamidskip
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxc}{\ddanda}\relax \nextShloka{\ddanda}}}\hfil}%
+\else%
+\@tempdima=\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}{\danda}}\shlokamidskip%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}{\danda}}\shlokamidskip%
+\hbox{\box\@tempboxc{\ddanda}\relax \nextShloka{\ddanda}}}\hfil}%
+\fi%
+\fi}
+
+\newcommand{\fourlineindentedshloka}{\@ifstar
+                     \fourlineindentedshlokaStar%
+                     \fourlineindentedshlokaNoStar%
+}
+
+\newcommand{\fourlineindentedshlokaNoStar}[4]{%
+\vskip\shlokavskip\vsp
+\setbox\@tempboxa=\hbox{#1}%
+\setbox\@tempboxb=\hbox{#3}%
+\setbox\@tempboxc=\hbox{#2}%
+\setbox\@tempboxd=\hbox{#4}%
+\ifdim\wd\@tempboxa>\wd\@tempboxb%
+\@tempdima=\wd\@tempboxa%
+\ifdim\wd\@tempboxc>\wd\@tempboxd%
+\@tempdimb=\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc {\danda}}\shlokamidskip%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}{\ddanda}\relax \nextShloka{\ddanda}}}\hfil}%
+\else%
+\@tempdimb=\wd\@tempboxd%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}{\danda}}\shlokamidskip%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxd {\ddanda}\relax \nextShloka{\ddanda}}}\hfil}%
+\fi%
+\else%
+\@tempdima=\wd\@tempboxb%
+\ifdim\wd\@tempboxc>\wd\@tempboxd%
+\@tempdimb=\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc {\danda}}\shlokamidskip%
+\hbox{\box\@tempboxb}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}{\ddanda}\relax \nextShloka{\ddanda}}}\hfil}%
+\else%
+\@tempdimb=\wd\@tempboxd%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}{\danda}}\shlokamidskip%
+\hbox{\box\@tempboxb}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxd {\ddanda}\relax \nextShloka{\ddanda}}}\hfil}%
+\fi%
+\fi}
+
+\newcommand{\fourlineindentedshlokaStar}[4]{%
+\vskip\shlokavskip\vsp
+\setbox\@tempboxa=\hbox{#1}%
+\setbox\@tempboxb=\hbox{#3}%
+\setbox\@tempboxc=\hbox{#2}%
+\setbox\@tempboxd=\hbox{#4}%
+\ifdim\wd\@tempboxa>\wd\@tempboxb%
+\@tempdima=\wd\@tempboxa%
+\ifdim\wd\@tempboxc>\wd\@tempboxd%
+\@tempdimb=\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc {\danda}}\shlokamidskip%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}{\ddanda}}}\hfil}%
+\else%
+\@tempdimb=\wd\@tempboxd%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}{\danda}}\shlokamidskip%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxd {\ddanda}}}\hfil}%
+\fi%
+\else%
+\@tempdima=\wd\@tempboxb%
+\ifdim\wd\@tempboxc>\wd\@tempboxd%
+\@tempdimb=\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc {\danda}}\shlokamidskip%
+\hbox{\box\@tempboxb}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}{\ddanda}}}\hfil}%
+\else%
+\@tempdimb=\wd\@tempboxd%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}{\danda}}\shlokamidskip%
+\hbox{\box\@tempboxb}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxd {\ddanda}}}\hfil}%
+\fi%
+\fi}
+
+\newcommand{\annofourlineindentedshloka}[5]{%annotated fourlineindentedshloka
+\vskip\shlokavskip\vsp
+\setbox\@tempboxa=\hbox{#1}%
+\setbox\@tempboxb=\hbox{#3}%
+\setbox\@tempboxc=\hbox{#2}%
+\setbox\@tempboxd=\hbox{#4}%
+\ifdim\wd\@tempboxa>\wd\@tempboxb%
+\@tempdima=\wd\@tempboxa%
+\ifdim\wd\@tempboxc>\wd\@tempboxd%
+\@tempdimb=\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc {\danda}}\shlokamidskip%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}{\ddanda}\relax \nextShloka{\ddanda}\footnotesize{#5}\hspace{-3ex}}}\hfil}%
+\else%
+\@tempdimb=\wd\@tempboxd%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}{\danda}}\shlokamidskip%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxd {\ddanda}\relax \nextShloka{\ddanda}\footnotesize{#5}\hspace{-3ex}}}\hfil}%
+\fi%
+\else%
+\@tempdima=\wd\@tempboxb%
+\ifdim\wd\@tempboxc>\wd\@tempboxd%
+\@tempdimb=\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc {\danda}}\shlokamidskip%
+\hbox{\box\@tempboxb}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}{\ddanda}\relax \nextShloka{\ddanda}\footnotesize{#5}\hspace{-3ex}}}\hfil}%
+\else%
+\@tempdimb=\wd\@tempboxd%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}{\danda}}\shlokamidskip%
+\hbox{\box\@tempboxb}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxd {\ddanda}\relax \nextShloka{\ddanda}\footnotesize{#5}\hspace{-3ex}}}\hfil}%
+\fi%
+\fi}
+
+\newcommand{\fourlineshloka}[4]{%
+\vskip\shlokavskip\vsp
+\setbox\@tempboxa=\hbox{#1}%
+\setbox\@tempboxb=\hbox{#3}%
+\setbox\@tempboxc=\hbox{#2}%
+\setbox\@tempboxd=\hbox{#4}%
+\ifdim\wd\@tempboxa>\wd\@tempboxb%
+\@tempdima=\wd\@tempboxa%
+\ifdim\wd\@tempboxc>\wd\@tempboxd%
+\@tempdimb=\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc}\shlokamidskip%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}}}\hfil}%
+\else%
+\@tempdimb=\wd\@tempboxd%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}}\shlokamidskip%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxd}}\hfil}%
+\fi%
+\else%
+\@tempdima=\wd\@tempboxb%
+\ifdim\wd\@tempboxc>\wd\@tempboxd%
+\@tempdimb=\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc}\shlokamidskip%
+\hbox{\box\@tempboxb}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}}}\hfil}%
+\else%
+\@tempdimb=\wd\@tempboxd%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}}\shlokamidskip%
+\hbox{\box\@tempboxb}\shlokamidskip%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxd}}\hfil}%
+\fi%
+\fi}
+
+\newcommand{\THREElineshloka}[3]{%
+\vskip\shlokavskip\vsp
+\setbox\@tempboxa=\hbox{#1}%
+\setbox\@tempboxb=\hbox{#2}%
+\setbox\@tempboxc=\hbox{#3}%
+\ifdim\wd\@tempboxa>\wd\@tempboxb%
+\@tempdima=\wd\@tempboxa%
+\ifdim\wd\@tempboxa>\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}%
+\hbox{\box\@tempboxb}%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}%
+\hbox{\hbox to \@tempdimb{\unhbox\@tempboxc}}}\hfil}%
+\else%
+\@tempdimb=\wd\@tempboxd%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa}%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}}%
+\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}}%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxd}}\hfil}%
+\fi%
+\else%
+\@tempdima=\wd\@tempboxb%
+\ifdim\wd\@tempboxc>\wd\@tempboxd%
+\@tempdimb=\wd\@tempboxc%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxc}%
+\hbox{\box\@tempboxb}%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxd}}}\hfil}%
+\else%
+\@tempdimb=\wd\@tempboxd%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}}%
+\hbox{\hskip\shlokaspaceskip\hbox to \@tempdimb{\unhbox\@tempboxc}}%
+\hbox{\box\@tempboxb}%
+\hbox{\hskip\shlokaspaceskip\box\@tempboxd}}\hfil}%
+\fi%
+\fi}
+
+%%% SECTIONS and CHAPTERS %%%
+\titleclass{\section}{straight}
+\titleclass{\chapter}{straight}
+\titleformat{\section}[block]{\needspace{4\baselineskip}\Large\bfseries\filcenter}{}{1em}{\resetShloka}
+\titleformat{\chapter}[block]{\needspace{4\baselineskip}\LARGE\bfseries\filcenter}{}{1em}{\resetShloka}
+% \titlespacing{\section}{0pt}{2em plus 1em minus 2em}{1ex}
+% \titlespacing{\chapter}{0pt}{2em plus 1em minus 2em}{1ex}
+\titlespacing\chapter{0pt}{12pt plus 4pt minus 2pt}{0pt plus 2pt minus 2pt}
+\titlespacing\section{0pt}{12pt plus 4pt minus 2pt}{0pt plus 2pt minus 2pt}
+\titlespacing\subsection{0pt}{12pt plus 4pt minus 2pt}{0pt plus 2pt minus 2pt}
+
+\setlength{\headheight}{1.8em}
+\setcounter{secnumdepth}{-1}
+
+%% MODIFIED SECTIONING COMMANDS
+\newcommand{\dnsub}[1]{
+\medskip
+\centerline{\bfseries\Large#1}\nopagebreak[4]
+\smallskip
+}
+
+\newcommand{\uvacha}[1]{
+\medskip
+\centerline{\textbf{#1}}\nopagebreak[4]
+}
+
+\let\origclearpage\clearpage
+\renewcommand{\clearpage}{
+    \vfill
+    \origclearpage
+}
+
+\let\origdoublepage\cleardoublepage
+\newcommand{\clearemptydoublepage}{%
+  {\pagestyle{empty}\origdoublepage}%
+}
+
+\newcommand{\sep}{\hspace{1ex}$\circ$\hspace{1ex}}
+\newcommand{\blank}{\_\_\_\_}
+
+%% SECTION BREAKERS: FLOWERS
+\RequirePackage{bbding}
+\newcommand{\closesub}{\medskip\centerline{\EightFlowerPetal}}
+\newcommand{\closesection}{\medskip\centerline{\EightFlowerPetal\EightFlowerPetal\EightFlowerPetal}}
+
+%% OTHER FONTS & FORMATTING
+\newcommand{\pagenumfont}{\fontspec{Noto Sans}}
+% \let\sect\section
+% \let\chapt\chapter
+\newcommand{\sect}[1]{%
+%\section[#1]{\fontspec[FakeBold=1.0,FakeStretch=1.0,Script=Devanagari,Mapping=tex-text]{Siddhanta}॥#1॥}%
+\section[#1]{\textbf{\ddanda{}#1\ddanda{}}}%
+}
+
+\newcommand{\chapt}[1]{%
+%\chapter[#1]{\fontspec[FakeBold=1.0,FakeStretch=1.0,Script=Devanagari,Mapping=tex-text]{Siddhanta}॥#1॥}%
+\chapter[#1]{\bfseries\ddanda{}#1\ddanda{}}%
+}
+
+% \renewcommand{\dnsub}[1]{
+% \medskip
+% \centerline{\Large\fontspec[FakeBold=1.0,FakeStretch=1.08,Script=Devanagari,Mapping=tex-text]{Sanskrit 2003} ॥#1॥ }\nopagebreak[4]
+% %\centerline{\Large\fontspec[FakeBold=1.0,FakeStretch=1.2,Script=Devanagari,Mapping=tex-text]{Siddhanta} ॥#1॥ }\nopagebreak[4]
+% \smallskip
+% }
+
+
+\RequirePackage[titles]{tocloft}
+\renewcommand{\thepart}{{\dndigit{\arabic{part}}}}
+\renewcommand{\cftchappagefont}{\fontspec{Noto Sans Bold}}
+\renewcommand{\cftpartpagefont}{\fontspec{Noto Sans Bold}}
+\renewcommand{\cftsecpagefont}{\fontspec{Noto Sans}}
+% \newcommand{\vsp}{\medskip}
+\renewcommand\contentsname{अनुक्रमणिका}
+\renewcommand{\partname}{विभागः}
+\renewcommand{\cftpartfont}{\LARGE\fontspec[Script=Devanagari]{Sanskrit 2003}}
+\renewcommand{\cftchapfont}{\Large\fontspec[Script=Devanagari]{Sanskrit 2003}}
+\renewcommand{\cftsecfont}{\fontspec[Script=Devanagari]{Sanskrit 2003}}
+\renewcommand{\cfttoctitlefont}{\LARGE\fontspec[Script=Devanagari]{Sanskrit 2003}}
+
+\renewcommand{\sect}[1]{%
+%\section[#1]{\fontspec[FakeBold=1.0,FakeStretch=1.0,Script=Devanagari,Mapping=tex-text]{Siddhanta}॥#1॥}%
+\section[#1]{\fontspec[FakeBold=1.0,FakeStretch=1.0,Script=Devanagari,Mapping=tex-text]{Sanskrit 2003}॥#1॥}%
+}
+
+\renewcommand{\chapt}[1]{%
+%\chapter[#1]{\fontspec[FakeBold=1.0,FakeStretch=1.0,Script=Devanagari,Mapping=tex-text]{Siddhanta}॥#1॥}%
+\chapter[#1]{\fontspec[FakeBold=1.0,FakeStretch=1.0,Script=Devanagari,Mapping=tex-text]{Sanskrit 2003}॥#1॥}%
+}
+
+\renewcommand{\dnsub}[1]{
+\medskip
+\centerline{\Large\fontspec[FakeBold=1.0,FakeStretch=1.08,Script=Devanagari,Mapping=tex-text]{Sanskrit 2003} ॥#1॥ }\nopagebreak[4]
+%\centerline{\Large\fontspec[FakeBold=1.0,FakeStretch=1.2,Script=Devanagari,Mapping=tex-text]{Siddhanta} ॥#1॥ }\nopagebreak[4]
+\smallskip
+}
+
+\renewcommand{\uvacha}[1]{
+\medskip
+\centerline{\dngfont\bfseries{#1}}\nopagebreak[4]
+%\centerline{\fontspec[FakeBold=1.0,Script=Devanagari,Mapping=tex-text]{Siddhanta}{#1}}\nopagebreak[4]
+%\smallskip
+}
