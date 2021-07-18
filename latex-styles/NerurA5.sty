@@ -1,0 +1,51 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{Nerur}[2020/06/13 Nerur Shankara Matham doc typesetting]
+\RequirePackage{wasysym}
+\usepackage[17pt]{extsizes}
+\usepackage[top=1cm, bottom=1.5cm, left=0.4cm, right=0.4cm]{geometry}
+\XeTeXgenerateactualtext=1
+% Headers & Footers
+\RequirePackage{fancyhdr}
+\pagestyle{fancyplain}
+\newcommand{\contactinfo}{}
+\newcommand{\rheadtext}{}
+\newcommand{\lheadtext}{}
+\rhead{\textcolor{RawSienna}{\normalsize\rheadtext}}
+\lhead{\textcolor{RawSienna}{\normalsize\lheadtext}}
+\cfoot{\color{Nerurfg}\sffamily\large\thepage}
+
+\renewcommand{\dngfont}{\fontspec[Script=Devanagari,AutoFakeBold=2.5]{Sanskrit 2003}}
+\renewcommand{\tamilfont}{\fontspec[Script=Tamil,FakeStretch=0.85,AutoFakeBold=2.5]{Noto Serif Tamil}}
+\renewcommand{\telugufont}{\fontspec[Script=Telugu,AutoFakeBold=2.5]{Mandali}}
+\renewcommand{\kannadafont}{\fontspec[Script=Kannada,AutoFakeBold=2.5,Scale=0.9]{Nudi Unicode 01}}
+\renewcommand{\granthafont}{\fontspec[Script=Grantha,FakeStretch=0.9,AutoFakeBold=2.5]{Noto Serif Grantha}}
+\renewcommand{\malayalamfont}{\fontspec[Script=Malayalam,FakeStretch=0.9,AutoFakeBold=2.5]{Noto Serif Malayalam}}
+\renewcommand{\tamilgranthafont}{\fontspec[Script=Malayalam,FakeStretch=0.9,AutoFakeBold=2.5]{Agastya Serif}}
+\renewcommand{\hindifont}{\fontspec[Script=Devanagari,AutoFakeBold=2.5,AutoFakeSlant=0.2]{Sanskrit 2003}}
+\renewcommand{\iastfont}{\fontspec[AutoFakeBold=2.5]{Gentium}}
+
+\definecolor{Nerurfg}{RGB}{70,26,105}
+\definecolor{Nerurbg}{RGB}{255,255,215}
+\definecolor{RawSienna}{RGB}{151,64,6}
+\pagecolor{Nerurbg}
+\color{Nerurfg}
+
+\renewcommand{\headrulewidth}{0pt}
+\setlength{\columnseprule}{1pt}
+\setlength{\columnsep}{30pt}
+
+\setlength{\headheight}{18pt}
+\setlength{\parindent}{0pt}
+\renewcommand{\labelitemi}{{$\circ$}}
+
+\usepackage[bookmarks=true,bookmarksopen=true,xetex,colorlinks=true,
+linkcolor=blue,            % colour of internal links
+citecolor=cyan,             % colour of links to bibliography
+filecolor=magenta,          % colour of file links
+urlcolor=blue,               % colour of external links
+linkbordercolor=blue,
+pdfborderstyle={/S/U/W 1}
+]{hyperref}
+
+\titleformat{\section}[block]{\needspace{4\baselineskip}\large\bfseries\filcenter}{}{1em}{\resetShloka}
+\titleformat{\chapter}[block]{\needspace{4\baselineskip}\Large\bfseries\filcenter}{}{1em}{\resetShloka}
