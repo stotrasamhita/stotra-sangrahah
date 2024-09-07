@@ -71,15 +71,15 @@ urlcolor=blue               % colour of external links
 \hfuzz=6pt
 %\listfiles
 
-\newcommand{\ar}{\char"0930\char"094D\char"E009}
-\newcommand{\ur}{\char"0930\char"094D\char"200C}
-\newcommand{\sr}{\char"0930\char"094D\char"E007}
-\newcommand{\sn}{\char"0928\char"094D\char"E007}
-\newcommand{\snn}{\char"0928\char"094D\char"0928\char"094D\char"E007}
-\newcommand{\an}{\char"0928\char"094D\char"E009}
-\newcommand{\aav}{\char"093D\char"E009}
-\newcommand{\sav}{\char"093D\char"E007}
-\newcommand{\sG}{\char"0919\char"094D\char"E007}
+% \newcommand{\ar}{\char"0930\char"094D\char"E009}
+% \newcommand{\ur}{\char"0930\char"094D\char"200C}
+% \newcommand{\sr}{\char"0930\char"094D\char"E007}
+% \newcommand{\sn}{\char"0928\char"094D\char"E007}
+% \newcommand{\snn}{\char"0928\char"094D\char"0928\char"094D\char"E007}
+% \newcommand{\an}{\char"0928\char"094D\char"E009}
+% \newcommand{\aav}{\char"093D\char"E009}
+% \newcommand{\sav}{\char"093D\char"E007}
+% \newcommand{\sG}{\char"0919\char"094D\char"E007}
 \begin{document}
 \pagenumbering{Roman}
 \thispagestyle{empty}\clearpage
@@ -128,7 +128,30 @@ urlcolor=blue               % colour of external links
 \newline\ifthenelse{\equal{#1}{}}{\mbox{}}{{\small #1॥}}\nolinebreak[4]\vhrulefill{2.5pt}\raisebox{-4pt}{\bfseries{[\devanumber{\arabic{anuvakam}}]}}%\hrulefill
 }
 \setlength{\emergencystretch}{3em}
-
+\newcommand{\ta}[3]{
+\centerline{\scriptsize (तैत्तिरीयारण्यके प्रपाठकः - #1 / अनुवाकः - #2\ifx\hfuzz#3\hfuzz%
+%
+\else
+\mbox{ }/ पञ्चादयः - #3%
+\fi%
+)}
+}
+\newcommand{\tb}[4]{
+\centerline{\scriptsize (तैत्तिरीयब्राह्मणे अष्टकम् - #1 / प्रपाठकः - #2 / अनुवाकः - #3\ifx\hfuzz#4\hfuzz%
+%
+\else
+\mbox{ }/ पञ्चादयः - #4%
+\fi%
+)}
+}
+\newcommand{\ts}[4]{
+\centerline{\scriptsize (तैत्तिरीयसंहितायां काण्डम् - #1 / प्रपाठकः - #2 / अनुवाकः - #3\ifx\hfuzz#4\hfuzz%
+%
+\else
+\mbox{ }/ पञ्चादयः – #4%
+\fi%
+)}
+}
 % \sect{prArthanA}
 
 ॐ ग॒णानां᳚ त्वा ग॒णप॑तिꣳ हवामहे क॒विं क॑वी॒ना\-मु॑प॒मश्र॑वस्तमम्। 
