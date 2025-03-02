@@ -1,0 +1,34 @@
+% autocols.sty - Adaptive Multicolumn Environment
+% Automatically switches between full-width or multiple columns
+
+\ProvidesPackage{autocols}[2025/02/28 v1.0 Adaptive Multicolumn Environment]
+\RequirePackage{multicol}
+
+% Default column count (set globally)
+\newcommand{\maxColumns}{1}
+
+% AutoCols environment
+\newenvironment{AutoCols}[1][\maxColumns]{%
+  \edef\tempArg{#1}% Convert argument to string
+  \ifnum\tempArg=1\relax
+    \ignorespaces % Single column: act like normal text
+  \else
+    \begin{multicols}{\tempArg}% Multiple columns
+  \fi
+}{%
+  \ifnum\tempArg=1\relax
+    % Nothing to close
+  \else
+    \end{multicols}% Close multicols environment
+  \fi
+}
+
+% Package documentation
+% Usage:
+% \renewcommand{\maxColumns}{2} % Set default column count
+% \begin{AutoCols}...
+% \end{AutoCols}
+%
+% Optional argument to override column count per block:
+% \begin{AutoCols}[3]...
+% \end{AutoCols}

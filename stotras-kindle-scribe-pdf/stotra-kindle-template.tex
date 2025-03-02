@@ -1,5 +1,6 @@
 \documentclass[oneside,12pt]{book}
 \usepackage{shloka}
+\usepackage{autocols}
 \usepackage{etoolbox}
 \usepackage{fontawesome}
 \newbool{kindle}
@@ -72,6 +73,18 @@ urlcolor=blue				% colour of external links
 \vbadness=10000
 \hfuzz=6pt
 %\listfiles
+
+\renewcommand{\maxColumns}{2}
+
+% Helper macro to set shlokaspaceskip independently
+\newcommand{\adjustShlokaSpaceSkip}{%
+  \ifnum\maxColumns=2\relax
+    \shlokaspaceskip=12pt
+  \else
+    \shlokaspaceskip=24pt
+  \fi
+}
+
 \begin{document}
 \Large\setmainfont[Script=Devanagari,Mapping=tex-text]{Sanskrit 2003}
 \begin{center}

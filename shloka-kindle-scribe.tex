@@ -11,10 +11,11 @@
 \addtolength{\headsep}{-4mm}}{\usepackage[top=1.5cm, bottom=1.8cm, left=1.5cm, right=1.5cm,paperwidth=148mm,paperheight=210mm]{geometry}}
 
 \input{preamble}
+\renewcommand{\maxColumns}{2}
 \ifbool{print}{%Margin changes for print
 \addtolength{\evensidemargin}{-0.5cm}
 \addtolength{\oddsidemargin}{0.5cm}}{}
-
+\newcommand{\maxColumns}{2}
 \begin{document}
 \input{frontmatter}
 \Large\setmainfont[Script=Devanagari,Mapping=tex-text]{Sanskrit 2003}

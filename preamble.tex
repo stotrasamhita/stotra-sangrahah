@@ -1,8 +1,21 @@
 % !TeX program = XeLaTeX
 % !TeX root = shloka.tex
 \usepackage{shloka}
+\usepackage{autocols}
 % \usepackage{latex-styles/shloka-multilang}
 \usepackage{wallpaper}
+
+\renewcommand{\maxColumns}{1}
+
+% Helper macro to set shlokaspaceskip independently
+\newcommand{\adjustShlokaSpaceSkip}{%
+  \ifnum\maxColumns=2\relax
+    \shlokaspaceskip=12pt
+  \else
+    \shlokaspaceskip=24pt
+  \fi
+}
+
 
 %%% PAGE SIZE and MARGINS %%%
 \setmainfont[Script=Devanagari]{Sanskrit 2003}

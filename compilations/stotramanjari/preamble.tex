@@ -1,6 +1,7 @@
 % !TeX program = XeLaTeX
 % !TeX root = stotramanjari.tex
 \usepackage{shloka}
+\usepackage{autocols}
 \usepackage{wallpaper}
 
 %%% PAGE SIZE and MARGINS %%%
@@ -23,6 +24,15 @@
 \renewcommand{\headrulewidth}{0pt} % remove lines as well
 \renewcommand{\footrulewidth}{0pt}
 \cfoot{\pagenumfont\large\thepage}}
+
+% Helper macro to set shlokaspaceskip independently
+\newcommand{\adjustShlokaSpaceSkip}{%
+  \ifnum\maxColumns=2\relax
+    \shlokaspaceskip=12pt
+  \else
+    \shlokaspaceskip=24pt
+  \fi
+}
 
 %%% SECTIONS and CHAPTERS %%%
 \makeatletter
