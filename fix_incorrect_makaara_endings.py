@@ -16,14 +16,11 @@ def fix_m_ending(line1, line2):
     if match:
         # Check the first character after '{' in line2
         first_char = line2[1]
-        print(line2[1])
         if first_char not in vowels:
             return re.sub(pattern, r'ं}\2', line1)
     return line1
 
-
 def process_file(path):
-    print(f'{path}')
     with open(path, encoding='utf-8') as f:
         lines = f.readlines()
 
