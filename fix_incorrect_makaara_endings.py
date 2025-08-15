@@ -2,6 +2,7 @@
 import re
 from pathlib import Path
 import logging
+import sys
 
 # Define Sanskrit vowels
 vowels = "अआइईउऊऋॠऌॡएऐओऔ"
@@ -51,4 +52,7 @@ def process_file(path):
 
 # Walk through all .tex files and process
 for tex_file in Path('.').rglob('*.tex'):
+# for tex_file in sys.argv[1:]:
+# for tex_file in ['stotra-sangrahah/stotras/shiva/UmamaheshwaraStotram.tex']:
+    # print(tex_file)
     process_file(tex_file)

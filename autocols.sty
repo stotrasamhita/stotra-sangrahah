@@ -9,13 +9,14 @@
 
 % AutoCols environment
 \newenvironment{AutoCols}[1][\maxColumns]{%
-  \ifnum#1=1
+  \edef\tempArg{#1}% Convert argument to string
+  \ifnum\tempArg=1\relax
     \ignorespaces % Single column: act like normal text
   \else
-    \begin{multicols}{#1}% Multiple columns
+    \begin{multicols}{\tempArg}% Multiple columns
   \fi
 }{%
-  \ifnum#1=1
+  \ifnum\tempArg=1\relax
     % Nothing to close
   \else
     \end{multicols}% Close multicols environment
