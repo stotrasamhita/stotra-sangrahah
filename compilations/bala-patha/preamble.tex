@@ -9,6 +9,15 @@
 \setmainfont[Script=Devanagari]{Sanskrit 2003}
 \newfontscript{Devanagari}{deva,dev2}
 
+% Helper macro to set shlokaspaceskip independently
+\newcommand{\adjustShlokaSpaceSkip}{%
+  \ifnum\maxColumns=2\relax
+    \shlokaspaceskip=12pt
+  \else
+    \shlokaspaceskip=24pt
+  \fi
+}
+
 %%% HEADERS and FOOTERS %%%
 \usepackage{fancyhdr}
 \pagestyle{fancyplain}
