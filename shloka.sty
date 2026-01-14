@@ -116,10 +116,10 @@
 \setbox\@tempboxb=\hbox{#2}%
 \ifdim\wd\@tempboxa>\wd\@tempboxb%
 \@tempdima=\wd\@tempboxa%
-\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa ।}\shlokamidskip\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}॥\relax \nextShloka॥\footnotesize{#3}\hspace{-3ex}}}\hfil}%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\box\@tempboxa ।}\shlokamidskip\hbox{\hbox to \@tempdima{\unhbox\@tempboxb}॥\relax \nextShloka॥\rlap{#3}}}\hfil}%
 \else%
 \@tempdima=\wd\@tempboxb%
-\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}\shlokamidskip\hbox{\box\@tempboxb॥\relax \nextShloka॥\footnotesize{#3}\hspace{-3ex}}}\hfil}%
+\shlokatopskip\hbox to \linewidth{\hfil\vbox{\hbox{\hbox to \@tempdima{\unhbox\@tempboxa}।}\shlokamidskip\hbox{\box\@tempboxb॥\relax \nextShloka॥\rlap{#3}}}\hfil}%
 \fi}
 
 \newcommand{\twolineshlokaStar}[2]{%
