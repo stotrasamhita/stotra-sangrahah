@@ -45,7 +45,7 @@ variants.
 | `\twolineshloka` | 2 | both lines padded to the wider one's width, centered as a unit | line 1 ends `।`, line 2 ends `॥<num>॥` (starred: line 2 ends `॥` only, no number) |
 | `\threelineshloka` | 3 | same width-matching, 3 lines | **real, common macro — 76 uses across 51 files, not a rarity** |
 | `\fourlineindentedshloka` | 4 | odd lines (1,3) width-matched to each other, left-flush; even lines (2,4) width-matched to each other, indented by `\shlokaspaceskip` | line 2 ends `।`, line 4 ends `॥<num>॥` (starred: line 4 ends `॥` only) |
-| `\fourlineshloka` | 4 | same 4 lines, **not indented** | **no numbering at all** — used exactly twice, both in `stotras/vishnu/RanganathaGadyam.tex` |
+| `\fourlineshloka` | 4 | same odd/even pada indentation as `\fourlineindentedshloka` (confirmed by reading the full macro definition — it applies `\hskip\shlokaspaceskip` to padas 2 and 4 identically) | **no danda marks and no numbering at all** — the only real difference from `\fourlineindentedshloka` is that it's unpunctuated/unnumbered, not that it's unindented. Used exactly twice, both in `stotras/vishnu/RanganathaGadyam.tex` |
 | `\annotwolineshloka` | 3 | `\twolineshloka` + a trailing citation fragment via `\rlap{}` | as `\twolineshloka` |
 | `\annofourlineindentedshloka` | 5 | `\fourlineindentedshloka` + trailing citation via `\rlap{}` | as `\fourlineindentedshloka` |
 | `\THREElineshloka` | 3 | defined in `shloka.sty` | **dead code — never invoked anywhere in `stotras/`** |
