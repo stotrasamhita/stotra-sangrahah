@@ -58,12 +58,32 @@ def drop_counter_adjust(blocks):
     return [b for b in blocks if b["type"] != "counter-adjust"]
 
 
+# Files with no single natural title heading -- either a "compilation" file
+# bundling several independently-\sect-ed verses with no umbrella heading of
+# its own (nitya-shloka: 11 \sect calls, none of which is "the" title), or a
+# title embedded in plain prose rather than a \sect call at all
+# (kanchi-kamakshi-churnika's title literally appears as plain danda-wrapped
+# text: "॥श्री-कामाक्षी चूर्णिका॥"). There's no reliable way to derive these
+# automatically, so they're curated by hand here -- extend this as more such
+# files turn up in future corpus rollouts.
+TITLE_OVERRIDES = {
+    "nitya-shloka": "नित्यश्लोकाः",
+    "dhyanam": "ध्यानम्",
+    "kanchi-kamakshi-churnika": "श्री-कामाक्षी चूर्णिका",
+}
+
+
 def extract_title(blocks, meta, slug):
-    for i, b in enumerate(blocks):
-        if b["type"] == "heading":
-            title = b["text"]
-            del blocks[i]
-            return title, blocks
+    """Reads the title -- never removes a heading block from blocks[], so
+    every \\sect in the source stays visible on the page, including
+    whichever one supplied the title. Priority: curated override -> the
+    single heading if there's exactly one (the common, reliable case) ->
+    wiki_title -> humanized slug."""
+    if slug in TITLE_OVERRIDES:
+        return TITLE_OVERRIDES[slug], blocks
+    headings = [b for b in blocks if b["type"] == "heading"]
+    if len(headings) == 1:
+        return headings[0]["text"], blocks
     if meta.get("wiki_title"):
         return meta["wiki_title"], blocks
     return slug.replace("-", " ").title(), blocks
@@ -169,11 +189,42 @@ def render_block(block):
     return ""  # counter-adjust and anything else: nothing (shouldn't occur post-transform)
 
 
-def render_body(blocks, stotra_type=None):
-    parts = []
+PDF_VARIANTS = (
+    ("A5 / print", "stotras-pdf"),
+    ("Kindle", "stotras-kindle-pdf"),
+    ("Kindle Scribe", "stotras-kindle-scribe-pdf"),
+)
+PDF_BASE_URL = "https://raw.githubusercontent.com/stotrasamhita/stotra-sangrahah/master"
+
+
+def render_pdf_links(source_file):
+    """source_file is e.g. "stotras/hanuman/HanumanChalisa.tex" -- each PDF
+    variant mirrors that same category/filename under its own top-level
+    directory in stotra-sangrahah, just with a .pdf extension."""
+    rel = source_file[len("stotras/"):] if source_file.startswith("stotras/") else source_file
+    rel_pdf = rel.rsplit(".", 1)[0] + ".pdf"
+    links = "".join(
+        f'<a href="{PDF_BASE_URL}/{dirname}/{esc(rel_pdf)}">{esc(label)}</a>' for label, dirname in PDF_VARIANTS
+    )
+    return f'<div class="pdf-links"><span class="pdf-links-label">PDF:</span>{links}</div>'
+
+
+def render_body(blocks, stotra_type=None, source_file=None):
+    # hugo-book's default page template wraps .Content in <article
+    # class="markdown book-article"> -- it has no class of its own we can
+    # hook a stotra-specific selector to, so the verse content is wrapped in
+    # its own .stotra-article div here. This is also what the script-switcher
+    # (hugo/assets/js/script-switcher.js in the site repo) targets, and
+    # deliberately does NOT include the PDF links below: those are plain
+    # English labels ("A5 / print", "Kindle"), not Devanagari verse text, and
+    # transliterating them would be wrong.
+    article_parts = []
     if stotra_type:
-        parts.append(f'<p class="stotra-meta">{esc(stotra_type)}</p>')
-    parts.extend(render_block(b) for b in blocks)
+        article_parts.append(f'<p class="stotra-meta">{esc(stotra_type)}</p>')
+    article_parts.extend(render_block(b) for b in blocks)
+    parts = [f'<div class="stotra-article">' + "\n".join(p for p in article_parts if p) + "</div>"]
+    if source_file:
+        parts.append(render_pdf_links(source_file))
     # Single-newline-joined, no blank lines: keeps this one contiguous
     # CommonMark HTML block so goldmark passes it through verbatim, with no
     # markdown reinterpretation of Devanagari text (asterisks, underscores,
@@ -269,7 +320,7 @@ def main(argv=None):
         ir = json.loads(path.read_text(encoding="utf-8"))
         title, blocks = transform_blocks(ir)
         fm = build_front_matter(ir, title)
-        body = render_body(blocks, fm.get("stotra_type"))
+        body = render_body(blocks, fm.get("stotra_type"), ir["source_file"])
         out_path = out_root / ir["category"] / f"{ir['slug']}.md"
         entries.append((ir["category"], fm, body, out_path))
 

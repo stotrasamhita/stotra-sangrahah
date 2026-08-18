@@ -11,6 +11,7 @@ from ir_to_hugo import (  # noqa: E402
     is_blank_verse,
     render_block,
     render_body,
+    render_pdf_links,
     transform_blocks,
 )
 
@@ -41,18 +42,25 @@ class TestCounterAdjustDropped(unittest.TestCase):
 
 
 class TestTitleExtraction(unittest.TestCase):
-    def test_first_heading_becomes_title_rest_stay(self):
+    def test_single_heading_becomes_title_and_stays_in_body(self):
+        ir = make_ir([{"type": "heading", "text": "Sole Heading"}, {"type": "prose", "lines": ["x"], "text": "x"}])
+        title, blocks = transform_blocks(ir)
+        self.assertEqual(title, "Sole Heading")
+        heading_texts = [b["text"] for b in blocks if b["type"] == "heading"]
+        self.assertEqual(heading_texts, ["Sole Heading"])  # not removed
+
+    def test_multiple_headings_no_override_falls_back_not_first(self):
+        # Without a curated override, len(headings) != 1 is treated the same
+        # as "no reliable single title" -- falls through to wiki_title/slug
+        # rather than silently guessing the first heading is "the" title.
         ir = make_ir(
-            [
-                {"type": "heading", "text": "First"},
-                {"type": "prose", "lines": ["x"], "text": "x"},
-                {"type": "heading", "text": "Second"},
-            ]
+            [{"type": "heading", "text": "First"}, {"type": "heading", "text": "Second"}],
+            slug="test-slug",
         )
         title, blocks = transform_blocks(ir)
-        self.assertEqual(title, "First")
+        self.assertEqual(title, "Test Slug")
         heading_texts = [b["text"] for b in blocks if b["type"] == "heading"]
-        self.assertEqual(heading_texts, ["Second"])
+        self.assertEqual(heading_texts, ["First", "Second"])  # both kept, neither consumed
 
     def test_no_heading_falls_back_to_wiki_title(self):
         ir = make_ir([{"type": "prose", "lines": ["x"], "text": "x"}], meta={"wiki_title": "Dhyanam"})
@@ -63,6 +71,26 @@ class TestTitleExtraction(unittest.TestCase):
         ir = make_ir([{"type": "prose", "lines": ["x"], "text": "x"}], slug="foo-bar")
         title, _ = transform_blocks(ir)
         self.assertEqual(title, "Foo Bar")
+
+    def test_multiple_headings_use_curated_override_not_the_first_one(self):
+        # NityaShloka.tex: 11 \sect calls, none of which is "the" title --
+        # the bug this override fixes was displaying the first one
+        # ("Chiranjivi Stotram") as the whole file's title.
+        ir = make_ir(
+            [{"type": "heading", "text": "चिरञ्जीविस्तोत्रम्"}, {"type": "heading", "text": "पञ्चकन्यास्मरणम्"}],
+            slug="nitya-shloka",
+        )
+        title, blocks = transform_blocks(ir)
+        self.assertEqual(title, "नित्यश्लोकाः")
+
+    def test_title_heading_stays_in_body(self):
+        # The bug report: "Currently ... not displayed inside the page at
+        # all" -- no heading should ever be removed from blocks[] now.
+        ir = make_ir([{"type": "heading", "text": "Only Heading"}, {"type": "prose", "lines": ["x"]}])
+        title, blocks = transform_blocks(ir)
+        self.assertEqual(title, "Only Heading")
+        heading_texts = [b["text"] for b in blocks if b["type"] == "heading"]
+        self.assertEqual(heading_texts, ["Only Heading"])
 
 
 class TestBlankVerseFilter(unittest.TestCase):
@@ -232,7 +260,41 @@ class TestHtmlRendering(unittest.TestCase):
 
     def test_render_body_prepends_stotra_type(self):
         body = render_body([{"type": "prose", "lines": ["x"]}], stotra_type="Ashtakam")
-        self.assertTrue(body.startswith('<p class="stotra-meta">Ashtakam</p>'))
+        self.assertIn('<div class="stotra-article"><p class="stotra-meta">Ashtakam</p>', body)
+
+    def test_render_body_wraps_verse_content_in_stotra_article(self):
+        # This is the class the script-switcher and CSS target; the theme's
+        # own default template gives no other hook to select just the verse
+        # content (as opposed to page chrome), so this script supplies it.
+        body = render_body([{"type": "prose", "lines": ["x"]}])
+        self.assertIn('<div class="stotra-article">', body)
+
+    def test_pdf_links_excluded_from_stotra_article_wrapper(self):
+        # PDF link labels ("A5 / print", "Kindle") are plain English, not
+        # Devanagari verse text -- the script-switcher must not touch them.
+        body = render_body([{"type": "prose", "lines": ["x"]}], source_file="stotras/hanuman/HanumanChalisa.tex")
+        article_end = body.index("</div>") + len("</div>")
+        self.assertNotIn("pdf-links", body[:article_end])
+        self.assertIn("pdf-links", body[article_end:])
+
+
+class TestPdfLinks(unittest.TestCase):
+    def test_three_variants_linked_with_matching_path(self):
+        out = render_pdf_links("stotras/hanuman/HanumanChalisa.tex")
+        self.assertIn(
+            'href="https://raw.githubusercontent.com/stotrasamhita/stotra-sangrahah/master/stotras-pdf/hanuman/HanumanChalisa.pdf"',
+            out,
+        )
+        self.assertIn("stotras-kindle-pdf/hanuman/HanumanChalisa.pdf", out)
+        self.assertIn("stotras-kindle-scribe-pdf/hanuman/HanumanChalisa.pdf", out)
+
+    def test_appended_to_body_when_source_file_given(self):
+        body = render_body([{"type": "prose", "lines": ["x"]}], source_file="stotras/hanuman/HanumanChalisa.tex")
+        self.assertIn("pdf-links", body)
+
+    def test_omitted_when_no_source_file(self):
+        body = render_body([{"type": "prose", "lines": ["x"]}])
+        self.assertNotIn("pdf-links", body)
 
 
 if __name__ == "__main__":
