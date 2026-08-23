@@ -151,6 +151,14 @@ def render_line(line, verse_number_deva, is_last, citation):
     return f'<div class="line{pada_cls}"{style}>{text}{punct}{cite}</div>'
 
 
+# Verse types whose padas share ONE justification target width in shloka.sty
+# (a single \@tempdima across all lines) -- CSS can reproduce true
+# justification for these directly. The 4-line indented types use two
+# independent target widths (odd/even padas) and are left as plain
+# indentation; see stotras.css.
+JUSTIFIABLE_VERSE_TYPES = {"verse-1", "verse-2", "verse-3", "verse-annotated-2"}
+
+
 def render_verse(block):
     lines = block["lines"]
     citation = block.get("citation")
@@ -159,7 +167,10 @@ def render_verse(block):
         render_line(line, block.get("verse_number_deva"), i == n - 1, citation) for i, line in enumerate(lines)
     )
     vid = esc(block.get("verse_id", ""))
-    return f'<div class="verse-block-wrapper" id="{vid}"><div class="verse-block">{rendered}</div></div>'
+    cls = "verse-block"
+    if block["type"] in JUSTIFIABLE_VERSE_TYPES:
+        cls += " verse-justify"
+    return f'<div class="verse-block-wrapper" id="{vid}"><div class="{cls}">{rendered}</div></div>'
 
 
 def render_block(block):

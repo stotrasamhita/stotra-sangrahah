@@ -237,6 +237,19 @@ class TestHtmlRendering(unittest.TestCase):
         self.assertIn("&lt; y &amp; z", out)
         self.assertNotIn("< y", out)
 
+    def test_simple_verse_types_get_justify_class(self):
+        for t in ("verse-1", "verse-2", "verse-3", "verse-annotated-2"):
+            block = {"type": t, "verse_number_deva": "१", "lines": [{"pada": None, "text": "a", "ending": "danda"}]}
+            out = render_block(block)
+            self.assertIn('class="verse-block verse-justify"', out, msg=t)
+
+    def test_four_line_verse_types_do_not_get_justify_class(self):
+        for t in ("verse-4-indented", "verse-4-plain", "verse-annotated-4"):
+            block = {"type": t, "verse_number_deva": "१", "lines": [{"pada": None, "text": "a", "ending": "danda"}]}
+            out = render_block(block)
+            self.assertIn('class="verse-block"', out, msg=t)
+            self.assertNotIn("verse-justify", out, msg=t)
+
     def test_columns_wraps_nested_blocks_in_one_div(self):
         block = {
             "type": "columns",
