@@ -58,57 +58,45 @@ def drop_counter_adjust(blocks):
     return [b for b in blocks if b["type"] != "counter-adjust"]
 
 
-# Files with no single natural title heading -- either a "compilation" file
+# Files with no natural title heading at all -- either a "compilation" file
 # bundling several independently-\sect-ed verses with no umbrella heading of
 # its own (nitya-shloka: 11 \sect calls, none of which is "the" title), or a
 # title embedded in plain prose rather than a \sect call at all
 # (kanchi-kamakshi-churnika's title literally appears as plain danda-wrapped
-# text: "॥श्री-कामाक्षी चूर्णिका॥"). There's no reliable way to derive these
-# automatically, so they're curated by hand here -- extend this as more such
-# files turn up in future corpus rollouts.
+# text: "॥श्री-कामाक्षी चूर्णिका॥"), or a file that starts directly with
+# per-chapter headings and no book-level title of its own (gita.tex: its
+# first heading is chapter 1's own title, "प्रथमोऽध्यायः...", not a title for
+# the whole book). There's no reliable way to derive these automatically, so
+# they're curated by hand here -- extend this as more such files turn up in
+# future corpus rollouts. Keyed by (category, slug), not slug alone: slugs
+# aren't unique across repos/categories (gita's and adhyatmaramayanam's
+# mahatmyam.tex both slugify to "mahatmyam" but need different titles).
 TITLE_OVERRIDES = {
-    "nitya-shloka": "नित्यश्लोकाः",
-    "dhyanam": "ध्यानम्",
-    "kanchi-kamakshi-churnika": "श्री-कामाक्षी चूर्णिका",
+    ("dhyanam", "nitya-shloka"): "नित्यश्लोकाः",
+    ("dhyanam", "dhyanam"): "ध्यानम्",
+    ("dhyanam", "kanchi-kamakshi-churnika"): "श्री-कामाक्षी चूर्णिका",
     # gita repo: mahatmyam.tex has no heading of its own (starts directly
-    # with a \dnsub subheading).
-    "mahatmyam": "गीता-माहात्म्यम्",
-    # mahabharatam/parvas: each file's first heading is the real \part{...}
-    # parva name, but every file also has many per-adhyaya \chapter{...}
-    # headings after it, so the "exactly one heading" rule below doesn't
-    # fire -- curate these explicitly instead of falling back to the
-    # slugified filename (which would show ugly things like "01 Ādiparva").
-    "01-ādiparva": "आदिपर्व",
-    "02-sabhāparva": "सभापर्व",
-    "03-araṇyaparva": "अरण्यपर्व",
-    "04-virāṭaparva-orig": "विराटपर्व",
-    "05-udyogaparva": "उद्यॊगपर्व",
-    "06-bhīṣmaparva": "भीष्मपर्व",
-    "07-droṇaparva": "द्रॊणपर्व",
-    "08-karṇaparva": "कर्णपर्व",
-    "09-śalyaparva": "शल्यपर्व",
-    "10-sauptikaparva": "सौप्तिकपर्व",
-    "11-strīparva": "स्त्रीपर्व",
-    "12-śāntiparva": "शान्तिपर्व",
-    "13-anuśāsanaparva": "अनुशासनपर्व",
-    "14-āśvamedhikaparva": "आश्वमॆधिकपर्व",
-    "15-mausalaparva": "मौसलपर्व",
-    "16-āśramavāsikaparva": "आश्रमवासिकपर्व",
-    "17-mahāprasthānikaparva": "महाप्रस्थानिकपर्व",
-    "18-svargārohaṇaparva": "स्वर्गारॊहणपर्व",
+    # with a \dnsub subheading); gita.tex's own first heading is chapter 1's,
+    # not the book's.
+    ("gita", "mahatmyam"): "गीता-माहात्म्यम्",
+    ("gita", "gita"): "श्रीमद्भगवद्गीता",
 }
 
 
-def extract_title(blocks, meta, slug):
+def extract_title(blocks, meta, category, slug):
     """Reads the title -- never removes a heading block from blocks[], so
     every \\sect in the source stays visible on the page, including
     whichever one supplied the title. Priority: curated override -> the
-    single heading if there's exactly one (the common, reliable case) ->
+    first heading, whenever at least one exists (mahabharatam/adhyatmaramayanam
+    kandas and parvas have many headings -- one per chapter -- but the very
+    first one is reliably the kanda/parva's own name: \\chapt{बालकाण्डः} or
+    \\part{आदिपर्व}, immediately followed by the first chapter's heading with
+    nothing in between; verified against the real corpus, not assumed) ->
     wiki_title -> humanized slug."""
-    if slug in TITLE_OVERRIDES:
-        return TITLE_OVERRIDES[slug], blocks
+    if (category, slug) in TITLE_OVERRIDES:
+        return TITLE_OVERRIDES[(category, slug)], blocks
     headings = [b for b in blocks if b["type"] == "heading"]
-    if len(headings) == 1:
+    if headings:
         return headings[0]["text"], blocks
     if meta.get("wiki_title"):
         return meta["wiki_title"], blocks
@@ -154,10 +142,38 @@ def transform_blocks(ir):
     blocks = list(ir["blocks"])
     meta = ir["meta"]
     blocks = drop_counter_adjust(blocks)
-    title, blocks = extract_title(blocks, meta, ir["slug"])
+    title, blocks = extract_title(blocks, meta, ir["category"], ir["slug"])
     blocks = drop_blank_verses(blocks)
     blocks = group_columns(blocks)
     return title, blocks
+
+
+def split_into_chapters(title, blocks):
+    """For a --split-chapters run: splits a multi-heading book (gita.tex's 18
+    adhyayas; a kanda/parva's many sargas/adhyayas) into
+    [(chapter_title, chapter_blocks), ...], one chapter per heading. Returns
+    None if there's only 0 or 1 heading total (nothing to split).
+
+    If blocks[0] is itself a heading whose text equals `title`, that heading
+    is the book's own name (a kanda's \\chapt{बालकाण्डः} or a parva's
+    \\part{आदिपर्व} -- extract_title's first-heading rule is what produced
+    this `title` in the first place) rather than "chapter 1", so it's
+    excluded from the chapters and left for the book-level index page alone.
+    Otherwise (gita.tex: no book-level heading of its own -- its title comes
+    from a curated override, never equal to any heading text) every heading
+    in blocks is itself a chapter, verse content and all."""
+    heading_idxs = [i for i, b in enumerate(blocks) if b["type"] == "heading"]
+    if len(heading_idxs) < 2:
+        return None
+    start = 1 if (heading_idxs[0] == 0 and blocks[0]["text"] == title) else 0
+    chapter_idxs = heading_idxs[start:]
+    if not chapter_idxs:
+        return None
+    chapters = []
+    for j, idx in enumerate(chapter_idxs):
+        end = chapter_idxs[j + 1] if j + 1 < len(chapter_idxs) else len(blocks)
+        chapters.append((blocks[idx]["text"], blocks[idx:end]))
+    return chapters
 
 
 # ---------------------------------------------------------------------------
@@ -319,14 +335,36 @@ def build_front_matter(ir, title):
     return front_matter
 
 
+# mahabharatam's parva slugs already carry a numeric prefix (01-ādiparva,
+# 02-sabhāparva, ...) so alphabetical-by-slug already produces the
+# traditional parva order -- no override needed there. adhyatmaramayanam's
+# kanda slugs don't (aranya-kanda, ayodhya-kanda, bala-kanda, ... sorts
+# alphabetically, not in story order), so its category gets the canonical
+# order spelled out here instead.
+CATEGORY_ORDER_OVERRIDES = {
+    "kandas": [
+        "mahatmyam", "bala-kanda", "ayodhya-kanda", "aranya-kanda", "kishkindha-kanda",
+        "sundara-kanda", "yuddha-kanda", "uttara-kanda",
+    ],
+}
+
+
 def assign_weights(front_matters):
     """front_matters: list of (category, front_matter dict), mutated in place
-    with a weight assigned alphabetically-by-slug within each category."""
+    with a weight assigned alphabetically-by-slug within each category, or
+    by CATEGORY_ORDER_OVERRIDES's explicit order where one is given (any
+    slug missing from that list sorts after all the ones present in it)."""
     by_category = {}
     for category, fm in front_matters:
         by_category.setdefault(category, []).append(fm)
-    for fms in by_category.values():
-        for i, fm in enumerate(sorted(fms, key=lambda f: f["slug"])):
+    for category, fms in by_category.items():
+        order = CATEGORY_ORDER_OVERRIDES.get(category)
+        if order:
+            order_index = {slug: i for i, slug in enumerate(order)}
+            key = lambda f: (order_index.get(f["slug"], len(order)), f["slug"])
+        else:
+            key = lambda f: f["slug"]
+        for i, fm in enumerate(sorted(fms, key=key)):
             fm["weight"] = (i + 1) * 10
 
 
@@ -379,6 +417,9 @@ def main(argv=None):
                     help='"Label=dirname,Label2=dirname2" (default: stotra-sangrahah\'s 3 variants); pass "" for none')
     ap.add_argument("--strip-prefix", default=DEFAULT_STRIP_PREFIX,
                     help="leading path segment to drop from source_file before appending .pdf (default: 'stotras/')")
+    ap.add_argument("--split-chapters", action="store_true",
+                    help="split multi-heading books (gita.tex's adhyayas; a kanda's/parva's sargas/adhyayas) into "
+                         "one page per chapter under a nested <slug>/ subsection, instead of one giant page per file")
     args = ap.parse_args(argv)
 
     pdf_variants = DEFAULT_PDF_VARIANTS if args.pdf_variants is None else parse_pdf_variants(args.pdf_variants)
@@ -389,21 +430,49 @@ def main(argv=None):
         return 1
 
     out_root = Path(args.out)
-    entries = []  # (category, front_matter, body_html, out_path)
+    entries = []  # (category, front_matter, body_html, out_path) -- weight assigned via assign_weights
+    chapter_pages = []  # (front_matter, body_html, out_path) -- already-sequential weight, written as-is
+    n_chapters = 0
     for path in paths:
         ir = json.loads(path.read_text(encoding="utf-8"))
         title, blocks = transform_blocks(ir)
-        fm = build_front_matter(ir, title)
-        body = render_body(blocks, fm.get("stotra_type"), ir["source_file"], args.pdf_repo, pdf_variants, args.strip_prefix)
-        out_path = out_root / ir["category"] / f"{ir['slug']}.md"
-        entries.append((ir["category"], fm, body, out_path))
+        chapters = split_into_chapters(title, blocks) if args.split_chapters else None
+
+        if chapters is None:
+            fm = build_front_matter(ir, title)
+            body = render_body(blocks, fm.get("stotra_type"), ir["source_file"], args.pdf_repo, pdf_variants, args.strip_prefix)
+            out_path = out_root / ir["category"] / f"{ir['slug']}.md"
+            entries.append((ir["category"], fm, body, out_path))
+            continue
+
+        # Book-level landing page: same front matter/weight treatment as a
+        # regular entry (participates in the category's normal ordering --
+        # e.g. CATEGORY_ORDER_OVERRIDES's kanda story-order applies here too),
+        # just nested under <slug>/_index.md instead of <slug>.md, with no
+        # verse content of its own (that's all in the split-out chapters).
+        book_fm = build_front_matter(ir, title)
+        book_fm["bookCollapseSection"] = True
+        book_body = render_body([], book_fm.get("stotra_type"), ir["source_file"], args.pdf_repo, pdf_variants, args.strip_prefix)
+        book_out = out_root / ir["category"] / ir["slug"] / "_index.md"
+        entries.append((ir["category"], book_fm, book_body, book_out))
+
+        pad = len(str(len(chapters)))
+        for i, (chapter_title, chapter_blocks) in enumerate(chapters):
+            chapter_fm = {"title": chapter_title, "weight": (i + 1) * 10}
+            chapter_body = render_body(chapter_blocks)
+            chapter_out = out_root / ir["category"] / ir["slug"] / f"chapter-{i + 1:0{pad}d}.md"
+            chapter_pages.append((chapter_fm, chapter_body, chapter_out))
+            n_chapters += 1
 
     assign_weights([(cat, fm) for cat, fm, _, _ in entries])
 
     for _, fm, body, out_path in entries:
         write_md(out_path, fm, body)
+    for fm, body, out_path in chapter_pages:
+        write_md(out_path, fm, body)
 
-    print(f"OK: wrote {len(entries)} Hugo content file(s) to {out_root}/")
+    suffix = f" ({n_chapters} chapter page(s) across {len({e[3].parent for e in entries if e[1].get('bookCollapseSection')})} book(s))" if n_chapters else ""
+    print(f"OK: wrote {len(entries) + len(chapter_pages)} Hugo content file(s) to {out_root}/{suffix}")
     return 0
 
 

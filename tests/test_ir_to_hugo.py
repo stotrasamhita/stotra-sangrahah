@@ -13,6 +13,7 @@ from ir_to_hugo import (  # noqa: E402
     render_block,
     render_body,
     render_pdf_links,
+    split_into_chapters,
     transform_blocks,
 )
 
@@ -50,16 +51,19 @@ class TestTitleExtraction(unittest.TestCase):
         heading_texts = [b["text"] for b in blocks if b["type"] == "heading"]
         self.assertEqual(heading_texts, ["Sole Heading"])  # not removed
 
-    def test_multiple_headings_no_override_falls_back_not_first(self):
-        # Without a curated override, len(headings) != 1 is treated the same
-        # as "no reliable single title" -- falls through to wiki_title/slug
-        # rather than silently guessing the first heading is "the" title.
+    def test_multiple_headings_no_override_uses_first_heading(self):
+        # mahabharatam/adhyatmaramayanam: many headings (one per chapter),
+        # but the first one is reliably the whole file's own name (the
+        # \part{parva}/\chapt{kanda} heading, verified against the real
+        # corpus to always immediately precede the first chapter's heading
+        # with nothing in between) -- used as the title without needing a
+        # curated override for every single file.
         ir = make_ir(
             [{"type": "heading", "text": "First"}, {"type": "heading", "text": "Second"}],
             slug="test-slug",
         )
         title, blocks = transform_blocks(ir)
-        self.assertEqual(title, "Test Slug")
+        self.assertEqual(title, "First")
         heading_texts = [b["text"] for b in blocks if b["type"] == "heading"]
         self.assertEqual(heading_texts, ["First", "Second"])  # both kept, neither consumed
 
@@ -74,15 +78,27 @@ class TestTitleExtraction(unittest.TestCase):
         self.assertEqual(title, "Foo Bar")
 
     def test_multiple_headings_use_curated_override_not_the_first_one(self):
-        # NityaShloka.tex: 11 \sect calls, none of which is "the" title --
-        # the bug this override fixes was displaying the first one
-        # ("Chiranjivi Stotram") as the whole file's title.
+        # NityaShloka.tex: 11 \sect calls bundling independent, unrelated
+        # verses -- none of which is "the" title (unlike mahabharatam/
+        # adhyatmaramayanam's kandas/parvas, where the first heading really
+        # is the file's own name). The bug this override fixes was
+        # displaying the first one ("Chiranjivi Stotram") as the whole
+        # file's title.
         ir = make_ir(
             [{"type": "heading", "text": "चिरञ्जीविस्तोत्रम्"}, {"type": "heading", "text": "पञ्चकन्यास्मरणम्"}],
             slug="nitya-shloka",
+            category="dhyanam",
         )
         title, blocks = transform_blocks(ir)
         self.assertEqual(title, "नित्यश्लोकाः")
+
+    def test_title_override_scoped_by_category_not_slug_alone(self):
+        # gita's and adhyatmaramayanam's mahatmyam.tex both slugify to
+        # "mahatmyam" but need different titles -- an override for one must
+        # not leak into the other.
+        ir = make_ir([{"type": "heading", "text": "अध्यात्मरामायणमाहात्म्यम्"}], slug="mahatmyam", category="kandas")
+        title, _ = transform_blocks(ir)
+        self.assertEqual(title, "अध्यात्मरामायणमाहात्म्यम्")
 
     def test_title_heading_stays_in_body(self):
         # The bug report: "Currently ... not displayed inside the page at
@@ -92,6 +108,51 @@ class TestTitleExtraction(unittest.TestCase):
         self.assertEqual(title, "Only Heading")
         heading_texts = [b["text"] for b in blocks if b["type"] == "heading"]
         self.assertEqual(heading_texts, ["Only Heading"])
+
+
+class TestChapterSplitting(unittest.TestCase):
+    def test_no_split_for_zero_or_one_heading(self):
+        self.assertIsNone(split_into_chapters("T", [{"type": "prose", "lines": ["x"]}]))
+        self.assertIsNone(split_into_chapters("T", [{"type": "heading", "text": "T"}, {"type": "prose", "lines": ["x"]}]))
+
+    def test_book_level_heading_excluded_from_chapters(self):
+        # adhyatmaramayanam kanda / mahabharatam parva shape: a book-level
+        # heading (used as `title`) immediately followed by per-chapter
+        # headings -- the book heading itself isn't "chapter 1".
+        blocks = [
+            {"type": "heading", "text": "बालकाण्डः"},
+            {"type": "heading", "text": "प्रथमः सर्गः"},
+            {"type": "prose", "lines": ["a"]},
+            {"type": "heading", "text": "द्वितीयः सर्गः"},
+            {"type": "prose", "lines": ["b"]},
+        ]
+        chapters = split_into_chapters("बालकाण्डः", blocks)
+        self.assertEqual([t for t, _ in chapters], ["प्रथमः सर्गः", "द्वितीयः सर्गः"])
+        self.assertEqual(len(chapters[0][1]), 2)  # its heading + the "a" prose block
+        self.assertEqual(len(chapters[1][1]), 2)
+
+    def test_no_book_level_heading_every_heading_is_a_chapter(self):
+        # gita.tex shape: title comes from a curated override (never equal
+        # to any heading text), every \chapt is itself a chapter.
+        blocks = [
+            {"type": "heading", "text": "प्रथमोऽध्यायः"},
+            {"type": "prose", "lines": ["a"]},
+            {"type": "heading", "text": "द्वितीयोऽध्यायः"},
+            {"type": "prose", "lines": ["b"]},
+        ]
+        chapters = split_into_chapters("श्रीमद्भगवद्गीता", blocks)
+        self.assertEqual([t for t, _ in chapters], ["प्रथमोऽध्यायः", "द्वितीयोऽध्यायः"])
+        self.assertEqual(len(chapters[0][1]), 2)
+
+    def test_last_chapter_runs_to_end_of_blocks(self):
+        blocks = [
+            {"type": "heading", "text": "A"},
+            {"type": "heading", "text": "B"},
+            {"type": "prose", "lines": ["x"]},
+            {"type": "prose", "lines": ["y"]},
+        ]
+        chapters = split_into_chapters("Z", blocks)
+        self.assertEqual(len(chapters[1][1]), 3)  # B's heading + both prose blocks
 
 
 class TestBlankVerseFilter(unittest.TestCase):
@@ -173,6 +234,24 @@ class TestWeightAssignment(unittest.TestCase):
         self.assertEqual(by_slug["alpha"], 10)
         self.assertEqual(by_slug["mid"], 20)
         self.assertEqual(by_slug["zeta"], 30)
+
+    def test_category_order_override_beats_alphabetical(self):
+        # adhyatmaramayanam's kandas: story order, not alphabetical.
+        entries = [
+            ("kandas", {"slug": "yuddha-kanda"}),
+            ("kandas", {"slug": "bala-kanda"}),
+            ("kandas", {"slug": "aranya-kanda"}),
+        ]
+        assign_weights(entries)
+        by_slug = {fm["slug"]: fm["weight"] for _, fm in entries}
+        self.assertLess(by_slug["bala-kanda"], by_slug["aranya-kanda"])
+        self.assertLess(by_slug["aranya-kanda"], by_slug["yuddha-kanda"])
+
+    def test_category_order_override_unlisted_slug_sorts_last(self):
+        entries = [("kandas", {"slug": "bala-kanda"}), ("kandas", {"slug": "not-in-the-list"})]
+        assign_weights(entries)
+        by_slug = {fm["slug"]: fm["weight"] for _, fm in entries}
+        self.assertLess(by_slug["bala-kanda"], by_slug["not-in-the-list"])
 
 
 class TestHtmlRendering(unittest.TestCase):
