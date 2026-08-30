@@ -30,11 +30,15 @@ ARITY = {
     "annofourlineindentedshloka": 5,
     "dnsub": 1,
     "uvacha": 1,
+    # mahabharatam's own shloka.sty (not stotra-sangrahah's): a 3-couplet
+    # extension of fourlineindentedshloka's odd/even indentation pattern, no
+    # starred form (\ifstar isn't used in its definition -- always numbered).
+    "sixlineindentedshloka": 6,
 }
 
-NO_STAR_SUPPORT = {"annotwolineshloka", "annofourlineindentedshloka", "fourlineshloka"}
+NO_STAR_SUPPORT = {"annotwolineshloka", "annofourlineindentedshloka", "fourlineshloka", "sixlineindentedshloka"}
 NEVER_NUMBERED = {"fourlineshloka"}
-FOUR_LINE_MACROS = {"fourlineindentedshloka", "fourlineshloka", "annofourlineindentedshloka"}
+INDENTED_MACROS = {"fourlineindentedshloka", "fourlineshloka", "annofourlineindentedshloka", "sixlineindentedshloka"}
 
 TYPE_NAME = {
     "onelineshloka": "verse-1",
@@ -44,6 +48,7 @@ TYPE_NAME = {
     "fourlineshloka": "verse-4-plain",
     "annotwolineshloka": "verse-annotated-2",
     "annofourlineindentedshloka": "verse-annotated-4",
+    "sixlineindentedshloka": "verse-6-indented",
 }
 
 # (unstarred endings, starred endings-or-None) per line, in argument order.
@@ -62,6 +67,10 @@ ENDING_TABLE = {
     "annotwolineshloka": (["danda", "double-danda-numbered"], None),
     "annofourlineindentedshloka": (
         ["none", "danda", "none", "double-danda-numbered"],
+        None,
+    ),
+    "sixlineindentedshloka": (
+        ["none", "danda", "none", "danda", "none", "double-danda-numbered"],
         None,
     ),
 }
@@ -447,10 +456,34 @@ def clean_line_text(s):
     return re.sub(r"\s+", " ", s).strip()
 
 
+def expand_macro_invocations(text, path, name, n, body):
+    """Replaces each \\name{a1}...{aN} invocation with `body`, substituting
+    #1..#N with that invocation's own raw argument text -- unlike a 0-arg
+    macro's blind whole-document substitution, each invocation can supply
+    different arguments (e.g. mahabharatam's virāṭaparva.tex:
+    \\onelineindentedshloka{A}{B} ten times over, each with its own A/B)."""
+    invoke_re = re.compile(r"\\" + re.escape(name) + r"\b")
+    while True:
+        m = invoke_re.search(text)
+        if not m:
+            return text
+        scanner = TexScanner(text, path)
+        scanner.pos = m.end()
+        args = [scanner.read_braced_arg() for _ in range(n)]
+        expanded = body
+        for i, a in enumerate(args, start=1):
+            expanded = expanded.replace(f"#{i}", a)
+        text = text[: m.start()] + expanded + text[scanner.pos :]
+
+
 def expand_local_macros(text, path):
-    """Pre-scan for \\newcommand{\\foo}{body} near the top of the file and
-    splice `body` in for every later bare \\foo -- handles file-local macros
-    like NamaRamayanam.tex's \\jaya generically, not as a hardcoded case."""
+    """Pre-scan for \\newcommand{\\foo}{body} (optionally \\newcommand{\\foo}[N]{body})
+    near the top of the file and splice `body` in for every later \\foo --
+    handles file-local macros like NamaRamayanam.tex's \\jaya (0-arg) and
+    mahabharatam's virāṭaparva.tex's \\onelineindentedshloka (2-arg)
+    generically, not as hardcoded cases. The xparse-style optional-default
+    form (\\newcommand{\\foo}[N][default]{body}, vedamantra-book's
+    \\anuvakamend) is out of scope -- skipped rather than mis-expanded."""
     while True:
         m = NEWCOMMAND_RE.search(text)
         if not m:
@@ -458,9 +491,24 @@ def expand_local_macros(text, path):
         name = m.group(1)
         scanner = TexScanner(text, path)
         scanner.pos = m.end()
+        n = 0
+        if scanner.peek() == "[":
+            n_arg = scanner.read_bracket_arg()
+            try:
+                n = int(n_arg)
+            except ValueError:
+                raise ParseError(path, scanner.line_at(scanner.pos), f"\\newcommand{{\\{name}}}[{n_arg}] -- non-integer arg count")
+        skip = n > 0 and scanner.peek() == "["  # xparse-style [N][default] -- out of scope
+        if skip:
+            scanner.read_bracket_arg()
         body = scanner.read_braced_arg()
         text = text[: m.start()] + text[scanner.pos :]
-        text = re.sub(r"\\" + re.escape(name) + r"\b", lambda _match: body, text)
+        if skip:
+            continue
+        if n == 0:
+            text = re.sub(r"\\" + re.escape(name) + r"\b", lambda _match: body, text)
+        else:
+            text = expand_macro_invocations(text, path, name, n, body)
 
 
 def _prose_block(lines):
@@ -513,7 +561,7 @@ def emit_verse_block(name, starred, args, counter):
     else:
         vnum, vnum_deva = None, None
 
-    pada_tags = ["odd", "even", "odd", "even"] if name in FOUR_LINE_MACROS else [None] * len(verse_args)
+    pada_tags = (["odd", "even"] * len(verse_args))[: len(verse_args)] if name in INDENTED_MACROS else [None] * len(verse_args)
 
     lines = [
         {"pada": pada, "text": clean_line_text(text), "ending": ending}
@@ -640,6 +688,10 @@ def parse_blocks(text, path, warn):
 
             if name == "ldots":
                 emit_text("…")
+                continue
+
+            if name == "circ":
+                emit_text("॰")  # yajur-upakarma.tex's \sep word-separator dot (Devanagari abbreviation sign)
                 continue
 
             if name == "item":
@@ -907,6 +959,13 @@ def parse_blocks(text, path, warn):
 
         elif c == "~":
             emit_text(" ")  # TeX non-breaking space
+            scanner.pos += 1
+            continue
+        elif c == "$":
+            # Math-mode toggle: this corpus never has real math, just a
+            # single decorative symbol wrapped in $...$ (yajur-upakarma.tex's
+            # \sep word-separator, \circ) -- transparent, like {}, rather
+            # than building out real math-mode support for one symbol.
             scanner.pos += 1
             continue
         elif c == "{":

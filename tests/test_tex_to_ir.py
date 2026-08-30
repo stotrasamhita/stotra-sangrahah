@@ -67,6 +67,23 @@ class TestStarredNumbering(unittest.TestCase):
         self.assertIsNone(b["verse_number"])
         self.assertEqual(b["lines"][1]["ending"], "double-danda")
 
+    def test_sixlineindentedshloka(self):
+        # mahabharatam's own shloka.sty (not stotra-sangrahah's): a
+        # 3-couplet extension of fourlineindentedshloka's odd/even
+        # indentation pattern, no starred form.
+        blocks = parse_blocks(r"\sixlineindentedshloka{A}{B}{C}{D}{E}{F}", "t", lambda msg: None)
+        b = blocks[0]
+        self.assertEqual(b["type"], "verse-6-indented")
+        self.assertEqual(b["verse_number"], 1)
+        self.assertEqual(
+            [(l["pada"], l["text"], l["ending"]) for l in b["lines"]],
+            [
+                ("odd", "A", "none"), ("even", "B", "danda"),
+                ("odd", "C", "none"), ("even", "D", "danda"),
+                ("odd", "E", "none"), ("even", "F", "double-danda-numbered"),
+            ],
+        )
+
 
 class TestCounterModel(unittest.TestCase):
     def test_reset_then_add_composite(self):
@@ -133,6 +150,37 @@ class TestLocalMacroExpansion(unittest.TestCase):
         blocks = parse_blocks(body, "t", lambda msg: None)
         types = [b["type"] for b in blocks]
         self.assertIn("verse-2", types)
+
+    def test_parameterized_macro_each_invocation_gets_its_own_args(self):
+        # mahabharatam's virāṭaparva.tex: \onelineindentedshloka{#1}{#2}
+        # renders #1 as a plain line then #2 as a numbered onelineshloka --
+        # each of its several invocations must substitute its own arguments,
+        # not the first invocation's args reused everywhere (unlike the
+        # 0-arg case, this can't be a single blind whole-document \bfoo ->
+        # body substitution).
+        text = (
+            r"\newcommand{\onelineindentedshloka}[2]{{#1}\\\onelineshloka{#2}}"
+            + "\n\\sect{t}\n"
+            + r"\onelineindentedshloka{A1}{A2}" + "\n"
+            + r"\onelineindentedshloka{B1}{B2}" + "\n"
+        )
+        body, _ = strip_comments_and_extract_meta(text)
+        body = expand_local_macros(body, "t")
+        self.assertNotIn("onelineindentedshloka", body)
+        blocks = parse_blocks(body, "t", lambda msg: None)
+        prose_texts = [b["text"] for b in blocks if b["type"] == "prose"]
+        verse_texts = [b["lines"][0]["text"] for b in blocks if b["type"] == "verse-1"]
+        self.assertEqual(prose_texts, ["A1", "B1"])
+        self.assertEqual(verse_texts, ["A2", "B2"])
+
+    def test_xparse_optional_default_form_skipped_not_misexpanded(self):
+        # vedamantra-book's \newcommand{\anuvakamend}[1][]{...} -- out of
+        # scope (no corpus file needing it has this form with a *second*
+        # bracket); left unexpanded rather than corrupted.
+        text = r"\newcommand{\foo}[1][]{ignored #1}" + "\n" + r"\sect{t}" + "\n" + r"\foo{X}" + "\n"
+        body, _ = strip_comments_and_extract_meta(text)
+        body = expand_local_macros(body, "t")
+        self.assertIn(r"\foo", body)
 
 
 class TestLetAliasing(unittest.TestCase):
@@ -298,6 +346,15 @@ class TestBlankSeeKshama(unittest.TestCase):
         blocks = parse_blocks(r"\sect{t}" + "\n" + r"\blank{} test", "t", lambda msg: None)
         prose = next(b for b in blocks if b["type"] == "prose")
         self.assertIn("( )", prose["lines"][0])
+
+    def test_math_mode_circ_word_separator(self):
+        # yajur-upakarma.tex's \sep macro expands (via expand_local_macros)
+        # to \hspace{...}{\small$\circ$}\hspace{...} -- $ has no real math
+        # support, just this one decorative symbol, so it's transparent and
+        # \circ renders as a word-separator dot.
+        blocks = parse_blocks(r"\sect{t}" + "\n" + r"a $\circ$ b", "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["lines"][0], "a ॰ b")
 
     def test_see_dropped(self):
         blocks = parse_blocks(r"\sect{t}" + "\n" + r"before\see{app:x} after", "t", lambda msg: None)
