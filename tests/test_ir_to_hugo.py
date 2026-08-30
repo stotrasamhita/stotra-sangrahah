@@ -264,6 +264,13 @@ class TestHtmlRendering(unittest.TestCase):
         self.assertEqual(out.count('class="verse-columns"'), 1)
         self.assertIn("column-count:2", out)
 
+    def test_table_renders_rows_and_cells(self):
+        block = {"type": "table", "rows": [["a", "b & c"], ["d", "e"]]}
+        out = render_block(block)
+        self.assertEqual(out.count("<tr>"), 2)
+        self.assertIn("<td>a</td><td>b &amp; c</td>", out)
+        self.assertIn('class="stotra-table"', out)
+
     def test_render_body_has_no_blank_lines(self):
         blocks = [
             {"type": "subheading", "text": "X"},

@@ -221,6 +221,11 @@ def render_block(block):
         ncols = block.get("n") or 2
         inner = "".join(render_block(b) for b in block["blocks"])
         return f'<div class="verse-columns" style="column-count:{ncols};">{inner}</div>'
+    if t == "table":
+        rows = "".join(
+            "<tr>" + "".join(f"<td>{esc(cell)}</td>" for cell in row) + "</tr>" for row in block["rows"]
+        )
+        return f'<table class="stotra-table">{rows}</table>'
     if t.startswith("verse-"):
         return render_verse(block)
     return ""  # counter-adjust and anything else: nothing (shouldn't occur post-transform)

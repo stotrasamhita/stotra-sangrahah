@@ -66,13 +66,27 @@ ENDING_TABLE = {
     ),
 }
 
-STRUCTURAL_BEGIN_END = {"center", "large", "Large", "minipage", "flushleft"}
+STRUCTURAL_BEGIN_END = {"center", "large", "Large", "minipage", "flushleft", "enumerate", "itemize"}
 COLUMN_ENVIRONMENTS = {"multicols", "AutoCols"}
+TABLE_ENVIRONMENTS = {"tabular", "supertabular", "longtable"}
 
 DROPPED_ZERO_ARG = {
     "clearpage", "newpage", "smallskip", "medskip", "bigskip", "nobreak",
     "hfill", "raggedright", "selectfont", "adjustShlokaSpaceSkip",
     "nopagebreak", "normalsize", "noindent", "centering",
+    # font-size/family switches: no visible effect on the page (CSS already
+    # sets one consistent font throughout .stotra-article).
+    "bfseries", "sffamily", "scriptsize", "small", "large", "footnotesize",
+    # FontAwesome clock icon (puja-vidhanam's practical-timing notes,
+    # e.g. "\faClockO{} {\sffamily This must be offered thrice every day...}") --
+    # decorative, dropped rather than reproduced as an emoji/icon.
+    "faClockO",
+    # \footnotemark[\value{footnote}] -- print-only citation marker, no
+    # pagination on a web page for it to point at.
+    "footnotemark",
+    # hyperref PDF-bookmark anchor; vertical-skip spacing tweak: neither has
+    # a visible effect here.
+    "phantomsection", "shlokavskip",
 }
 DROPPED_ONE_ARG = {
     "label", "vspace", "setmainfont", "mbox", "hspace",
@@ -83,9 +97,15 @@ DROPPED_ONE_ARG = {
     # renders correctly, just without whatever the referenced file would
     # have added.
     "input",
+    # print-only citation/pagination hints, no web equivalent to reproduce.
+    "footnotetext", "footnote", "needspace",
+    # standalone \value{counter} (outside \footnotemark[\value{footnote}],
+    # already handled above): no other counter in this corpus is read this
+    # way, so it's just dropped rather than resolved.
+    "value",
 }
-DROPPED_TWO_ARG = {"setlength"}  # lint-checked for begingroup/brace scoping
-DROPPED_TWO_ARG_NO_LINT = {"fontsize"}
+DROPPED_TWO_ARG = {"setlength", "addtolength"}  # lint-checked for begingroup/brace scoping
+DROPPED_TWO_ARG_NO_LINT = {"fontsize", "markboth"}  # markboth: print page-header bookmarking, no visible effect
 UNWRAP_ONE_ARG = {"textbf", "textsf", "textit", "emph", "centerline", "textsuperscript"}
 
 # \X for X not a letter: known literal-producing escapes (\% is already
@@ -93,6 +113,114 @@ UNWRAP_ONE_ARG = {"textbf", "textsf", "textit", "emph", "centerline", "textsuper
 # "\" immediately before a newline (go-puja.tex has exactly one, a stray
 # corpus artifact with no other sensible reading) is absorbed like "\-".
 ESCAPED_SYMBOLS = {"&": "&", "_": "_", "#": "#", " ": " ", "-": "", "\n": ""}
+
+# --- puja-vidhanam-specific shared boilerplate ------------------------------
+# puja-vidhanam/preamble.tex and purana-dhyana-shloka.tex define ~30 macros
+# every individual puja file relies on but never defines itself (loaded only
+# by the book-assembly .tex files, which this converter doesn't read). Their
+# definitions are transcribed here directly from those two files rather than
+# generically loading \newcommand/\renewcommand from preamble.tex's raw text:
+# some of preamld.tex's redefinitions (e.g. \resetSankalpa's own body is a
+# *nested* block of further \renewcommand calls, only meant to take effect
+# when \resetSankalpa is actually invoked) would corrupt a naive whole-file
+# textual-substitution pass, so a hand-verified transcription is safer here
+# than a generic loader.
+#
+# PUJA_TEXT_MACRO_DEFAULTS seeds plain-text placeholders (sankalpa date/time/
+# purpose fields etc.) with preamble.tex's own defaults; any file's own
+# \renewcommand overrides its entry from that point in the document onward
+# (see the \renewcommand dispatch below). \blank's rendering ("(   )") and
+# \see's footnote-to-a-print-page-number (dropped -- meaningless online) are
+# baked into these where preamble.tex's own default reads as \blank / \blank\see{...}.
+PUJA_BLANK = "(   )"
+PUJA_TEXT_MACRO_DEFAULTS = {
+    "devaName": "देव", "devAya": "", "devaH": "",
+    "achamanam": "आचमनम्।", "achamya": "(आचम्य)", "pranayama": "प्राणान् आयम्य।",
+    "samvatsara": PUJA_BLANK, "ayane": PUJA_BLANK, "rtu": PUJA_BLANK, "masa": PUJA_BLANK,
+    "paksha": "(शुक्ल / कृष्ण)", "tithau": PUJA_BLANK,
+    "vasara": "(इन्दु / भौम / सौम्य / गुरु / भृगु / स्थिर / भानु)",
+    "nakshatra": PUJA_BLANK, "yoga": PUJA_BLANK, "karana": PUJA_BLANK,
+    "regularSankalpa": (
+        "अस्माकं सहकुटुम्बानां क्षेमस्थैर्य-धैर्य-वीर्य-विजय-आयुरारोग्य-ऐश्वर्याभिवृद्ध्यर्थं "
+        "धर्मार्थकाममोक्षचतुर्विधफलपुरुषार्थसिद्ध्यर्थं पुत्रपौत्राभिवृद्ध्यर्थम् इष्टकाम्यार्थसिद्ध्यर्थं "
+        "मम इहजन्मनि पूर्वजन्मनि जन्मान्तरे च सम्पादितानां ज्ञानाज्ञानकृतमहापातकचतुष्टय-व्यतिरिक्तानां "
+        "रहस्यकृतानां प्रकाशकृतानां सर्वेषां पापानां सद्य अपनोदनद्वारा सकल-पापक्षयार्थं"
+    ),
+    "additionalSankalpa": "", "kaale": "", "prakaarena": "", "prityartham": "", "pujaam": "",
+    # \OM/\OMshri are \ifbool{veda}{...}{...} in preamble.tex; since \ifbool
+    # always takes the false branch here (no veda flag context to resolve),
+    # these are pre-resolved to that branch's value directly.
+    "OM": "", "OMshri": "श्री-",
+}
+
+# 0-arg macros whose body contains real structural macros (verses, \dnsub,
+# etc.) -- spliced into the scanner stream at the invocation point (like
+# \hyperref/\textbf unwrapping) so everything inside gets re-parsed normally,
+# rather than flattened to inert text.
+SPLICE_MACROS = {
+    "shuklambaradharam": r"\twolineshloka*{शुक्लाम्बरधरं विष्णुं शशिवर्णं चतुर्भुजम्}{प्रसन्नवदनं ध्यायेत् सर्वविघ्नोपशान्तये}",
+    "hiranyagarbha": r"\twolineshloka*{हिरण्यगर्भगर्भस्थं हेमबीजं विभावसोः}{अनन्तपुण्यफलदम् अतः शान्तिं प्रयच्छ मे}",
+    "vighneshvaraYathasthanam": (
+        r"श्रीविघ्नेश्वराय नमः यथास्थानं प्रतिष्ठापयामि। शोभनार्थे क्षेमाय पुनरागमनाय च।\\"
+        r"(गणपति-प्रसादं शिरसा गृहीत्वा)"
+    ),
+    "aavaahitobhava": (
+        r"आवाहितो भव। स्थापितो भव। सन्निहितो भव। सन्निरुद्धो भव। अवकुण्ठितो भव। "
+        r"प्रीतो भव। सुप्रसन्नो भव। सुमुखो भव। वरदो भव। प्रसीद प्रसीद॥ "
+        r"\twolineshloka*{स्वामिन् सर्वजगन्नाथ यावत्पूजावसानकम्}{तावत् त्वं प्रीतिभावेन बिम्बेऽस्मिन् सन्निधिं कुरु} "
+        r"\centerline{॥इति प्राणप्रतिष्ठा॥}"
+    ),
+    "nArAyaNam": r"\twolineshloka*{नारायणं नमस्कृत्य नरं चैव नरोत्तमम्}{देवीं सरस्वतीं व्यासं ततो जयमुदीरयेत्}",
+    "sankalpa": (
+        r"\dnsub{सङ्कल्पः} "
+        r"ममोपात्त-समस्त-दुरित-क्षयद्वारा श्री-परमेश्वर-प्रीत्यर्थं शुभे शोभने मुहूर्ते अद्य ब्रह्मणः "
+        r"द्वितीयपरार्धे श्वेतवराहकल्पे वैवस्वतमन्वन्तरे अष्टाविंशतितमे कलियुगे प्रथमे पादे "
+        r"जम्बूद्वीपे भारतवर्षे भरतखण्डे मेरोः दक्षिणे पार्श्वे शकाब्दे अस्मिन् वर्तमाने व्यावहारिकाणां "
+        r"प्रभवादीनां षष्ट्याः संवत्सराणां मध्ये "
+        r"\textbf{\samvatsara} नाम संवत्सरे \textbf{\ayane{}} \textbf{\rtu}-ऋतौ \textbf{\masa}-मासे "
+        r"\textbf{\paksha}पक्षे \textbf{\tithau} शुभतिथौ \textbf{\vasara}-वासरयुक्तायां "
+        r"\textbf{\nakshatra}-नक्षत्र-\textbf{\yoga}-योग-\textbf{\karana}-करण-युक्तायां "
+        r"च एवं गुण-विशेषण-विशिष्टायाम् अस्याम्\\"
+        r"\textbf{\tithau{}} शुभतिथौ "
+        r"\regularSankalpa{} \additionalSankalpa{} \prityartham{} \kaale{} \prakaarena{} "
+        r"यथाशक्ति-ध्यान-आवाहनादि-षोडशोपचारैः \pujaam{} करिष्ये।\\"
+        r"तदङ्गं कलशपूजां च करिष्ये।"
+    ),
+    # Invoking \resetSankalpa re-applies preamble.tex's own defaults for the
+    # sankalpa placeholders (as opposed to whatever a file redefined them to
+    # earlier) -- spliced as the literal \renewcommand sequence so the
+    # generic \renewcommand dispatch below applies each one, in order, from
+    # this point in the document onward.
+    "resetSankalpa": "\n".join(
+        r"\renewcommand{\%s}{%s}" % (k, v) for k, v in {
+            "samvatsara": PUJA_BLANK, "ayane": "(उत्तरायणे/दक्षिणायने)", "rtu": PUJA_BLANK, "masa": PUJA_BLANK,
+            "paksha": "(शुक्ल / कृष्ण)", "tithau": PUJA_BLANK,
+            "vasara": "(इन्दु / भौम / सौम्य / गुरु / भृगु / स्थिर / भानु)",
+            "nakshatra": PUJA_BLANK, "yoga": PUJA_BLANK, "karana": PUJA_BLANK,
+            "additionalSankalpa": "", "kaale": "", "prakaarena": "", "prityartham": "", "pujaam": "",
+        }.items()
+    ) + "\n" + r"\renewcommand{\regularSankalpa}{%s}" % PUJA_TEXT_MACRO_DEFAULTS["regularSankalpa"],
+}
+
+# \kshama{name} (1-arg): an "apology for deficiencies in this worship" verse
+# personalizing the closing line with the deity's name.
+KSHAMA_TEMPLATE = (
+    r"\dnsub{अपराध-क्षमापनम्} "
+    r"\twolineshloka*{यस्य स्मृत्या च नामोक्त्या तपः-पूजा-क्रियादिषु}{न्यूनं सम्पूर्णतां याति सद्यो वन्दे %s} "
+    r"\fourlineindentedshloka*{कायेन वाचा मनसेन्द्रियैर्वा}{बुद्‌ध्याऽऽत्मना वा प्रकृतेः स्वभावात्}"
+    r"{करोमि यद्यत् सकलं परस्मै}{नारायणायेति समर्पयामि} "
+    r"\centerline{सर्वं तत्सद्ब्रह्मार्पणमस्तु।}"
+)
+
+# Macro names dispatched specially elsewhere in parse_blocks() -- \renewcommand
+# never registers a text-macro override for these, however it's used in the
+# corpus, so a stray/unexpected redefinition can't shadow real behavior.
+PROTECTED_MACRO_NAMES = (
+    {"sect", "chapt", "chapter", "part", "dnsub", "uvacha", "devanumber", "resetShloka",
+     "addtocounter", "refstepcounter", "stepcounter", "ifbool", "input", "let", "renewcommand",
+     "begingroup", "endgroup", "closesection", "closesub", "blank", "see", "kshama"}
+    | set(ARITY) | set(SPLICE_MACROS)
+)
 
 # The reliable signal for a closing colophon is the leading "इति" ("thus"),
 # not the specific closing word (सम्पूर्णम्/समाप्तम्/स्तोत्रम्/स्तवः/... all occur).
@@ -102,13 +230,24 @@ ESCAPED_SYMBOLS = {"&": "&", "_": "_", "#": "#", " ": " ", "-": "", "\n": ""}
 PUSHPIKA_RE = re.compile(r"॥\s*इति\s.*॥")
 ATTRIBUTION_RE = re.compile(r"^[{}\s]*-{2,3}(.+)$")
 NEWCOMMAND_RE = re.compile(r"\\newcommand\{\\([A-Za-z]+)\}")
-INLINE_STRIP_RE = re.compile(r"\\hspace\{[^{}]*\}|\\mbox\{\}|\\nobreak\b")
+# \footnotemark(\[...\])? -- a print-only citation marker occasionally
+# embedded mid-verse (e.g. nrisimha-jayanti-puja.tex's
+# "...परमेश्वर\footnotemark", go-puja.tex's "...गृह्ण\footnotemark[\value{footnote}] धेनुके"):
+# since a verse line's text is a raw captured argument (never re-scanned by
+# the main dispatch loop the way \footnotemark is handled there), it needs
+# the same drop here too.
+INLINE_STRIP_RE = re.compile(r"\\hspace\{[^{}]*\}|\\mbox\{\}|\\nobreak\b|\\footnotemark(\[[^\]]*\])?")
 # Text-styling wrappers occasionally used inside a heading/title argument
 # (e.g. gita.tex's "\textsf{---}" chapter-name separator); read_braced_arg()
 # returns that argument's raw substring unexpanded, so these need unwrapping
 # here rather than relying on the main scanner's UNWRAP_ONE_ARG dispatch,
 # which only ever sees body text, never a captured argument string.
 INLINE_UNWRAP_RE = re.compile(r"\\(?:textbf|textsf|textit|emph|centerline|textsuperscript)\{([^{}]*)\}")
+# \blank similarly appears mid-verse (nrisimha-jayanti-puja.tex's sankalpa
+# line) as well as inside \renewcommand bodies that themselves get spliced
+# (where it's handled by the main dispatch instead) -- this covers the
+# raw-argument case.
+INLINE_BLANK_RE = re.compile(r"\\blank\b")
 
 
 class ParseError(Exception):
@@ -303,6 +442,7 @@ def clean_line_text(s):
         if s2 == s:
             break
         s = s2
+    s = INLINE_BLANK_RE.sub(PUJA_BLANK, s)
     s = s.replace("~", " ")  # TeX non-breaking space
     return re.sub(r"\s+", " ", s).strip()
 
@@ -409,6 +549,28 @@ def parse_blocks(text, path, warn):
     # since no \let in the corpus needed that.
     aliases = {}
     alias_stack = []
+    # Plain-text macro substitution (\renewcommand{\X}{body} and the
+    # puja-vidhanam placeholder defaults) -- see PUJA_TEXT_MACRO_DEFAULTS.
+    # Position-aware: a file's own \renewcommand overrides its entry from
+    # that point in the document onward, matching real LaTeX semantics
+    # (unlike expand_local_macros()'s whole-document textual substitution).
+    text_macros = dict(PUJA_TEXT_MACRO_DEFAULTS)
+    # \begin{tabular}/\{supertabular}/\{longtable}: a stack of
+    # {"rows": [...], "current_row": [...], "cell_buf": [...]} accumulators
+    # (a stack, not a single value, in case of nested tables). While one is
+    # active, plain-text output (chars, ~, escaped symbols) is redirected
+    # here instead of prose_buf, and bare "&"/"\\" become cell/row
+    # separators instead of literal text/a forced line break. Macros
+    # invoked *inside* a cell (e.g. \textbf{}) still append to prose_buf,
+    # not the cell buffer -- none of this corpus's actual tables use them,
+    # so this is intentionally not handled generically.
+    table_stack = []
+
+    def emit_text(s):
+        if table_stack:
+            table_stack[-1]["cell_buf"].append(s)
+        else:
+            prose_buf.append(s)
 
     def flush():
         flush_prose(prose_buf, blocks)
@@ -416,15 +578,29 @@ def parse_blocks(text, path, warn):
     while not scanner.eof():
         c = scanner.peek()
 
+        if table_stack and c == "&":
+            tbl = table_stack[-1]
+            tbl["current_row"].append(clean_line_text("".join(tbl["cell_buf"])))
+            tbl["cell_buf"] = []
+            scanner.pos += 1
+            continue
+
         if c == "\\":
             nxt = scanner.text[scanner.pos + 1] if scanner.pos + 1 < scanner.n else ""
             if nxt == "\\":
                 scanner.pos += 2
                 scanner.read_bracket_arg()
-                prose_buf.append("\n")
+                if table_stack:
+                    tbl = table_stack[-1]
+                    tbl["current_row"].append(clean_line_text("".join(tbl["cell_buf"])))
+                    tbl["cell_buf"] = []
+                    tbl["rows"].append(tbl["current_row"])
+                    tbl["current_row"] = []
+                else:
+                    prose_buf.append("\n")
                 continue
             if nxt in ESCAPED_SYMBOLS:
-                prose_buf.append(ESCAPED_SYMBOLS[nxt])
+                emit_text(ESCAPED_SYMBOLS[nxt])
                 scanner.pos += 2
                 continue
 
@@ -435,6 +611,64 @@ def parse_blocks(text, path, warn):
                 x_name, _ = scanner.read_command()
                 y_name, _ = scanner.read_command()
                 aliases[x_name] = aliases.get(y_name, y_name)
+                continue
+
+            if name == "renewcommand":
+                # \renewcommand{\X}{body}: registers/overrides \X from here
+                # on (see text_macros above). The raw body is stored (not
+                # clean_line_text'd) because some bodies contain real
+                # structural content -- e.g. go-puja.tex's
+                # \renewcommand{\additionalSankalpa}{\begin{itemize}...} --
+                # which needs the normal dispatch loop to see \begin/\item
+                # etc. properly when \additionalSankalpa is later invoked
+                # (see the splice in the text_macros fallback below), not a
+                # flattened, unprocessed string.
+                # A parameterized form (\renewcommand{\X}[N]{...}, seen once
+                # in this corpus for \sect itself, in a file already excluded
+                # for an unrelated parse error) is out of scope -- skip it
+                # rather than mis-register a templated body as literal text.
+                target_arg = scanner.read_braced_arg().strip()
+                target_name = target_arg.lstrip("\\")
+                if scanner.peek() == "[":
+                    scanner.read_bracket_arg()
+                    scanner.read_braced_arg()
+                    continue
+                body = scanner.read_braced_arg()
+                if target_name not in PROTECTED_MACRO_NAMES:
+                    text_macros[target_name] = body
+                continue
+
+            if name == "ldots":
+                emit_text("…")
+                continue
+
+            if name == "item":
+                scanner.read_bracket_arg()  # optional custom label, e.g. \item[a.] -- unused in this corpus
+                emit_text("\n")  # starts each item on its own line, like a forced line break
+                continue
+
+            if name == "blank":
+                emit_text(PUJA_BLANK)
+                continue
+
+            if name == "see":
+                scanner.read_braced_arg()  # footnote-to-a-print-page-number; meaningless online, dropped
+                continue
+
+            if name == "kshama":
+                # Two shipped files (sarasvati-puja.tex, savitri-vratam.tex)
+                # invoke this bare, with no {name} argument at all -- a
+                # pre-existing bug in that source (real LaTeX would silently
+                # swallow the next token, usually \closesub, as #1 instead),
+                # not something to reproduce here. Tolerate it: an empty name
+                # is a reasonable fallback, and leaves the next token alone.
+                scanner.skip_ws()
+                deva_name = scanner.read_braced_arg() if scanner.peek() == "{" else ""
+                scanner.splice(KSHAMA_TEMPLATE % clean_line_text(deva_name))
+                continue
+
+            if name in SPLICE_MACROS:
+                scanner.splice(SPLICE_MACROS[name])
                 continue
 
             if name in ("begin", "end"):
@@ -460,6 +694,11 @@ def parse_blocks(text, path, warn):
                         flush()
                         blocks.append({"type": "columns-open", "n": None, "source": "AutoCols"})
                         scope_stack.append(envname)
+                    elif envname in TABLE_ENVIRONMENTS:
+                        scanner.read_braced_arg()  # column spec, e.g. {ll} -- not needed for HTML output
+                        flush()
+                        table_stack.append({"rows": [], "current_row": [], "cell_buf": []})
+                        scope_stack.append(envname)
                     else:
                         warn(f"unrecognized \\begin{{{envname}}}, treated as transparent")
                         scope_stack.append(envname)
@@ -476,12 +715,20 @@ def parse_blocks(text, path, warn):
                     if envname in COLUMN_ENVIRONMENTS:
                         flush()
                         blocks.append({"type": "columns-close"})
+                    elif envname in TABLE_ENVIRONMENTS:
+                        tbl = table_stack.pop()
+                        if tbl["cell_buf"] or tbl["current_row"]:
+                            tbl["current_row"].append(clean_line_text("".join(tbl["cell_buf"])))
+                            tbl["rows"].append(tbl["current_row"])
+                        flush()
+                        blocks.append({"type": "table", "rows": tbl["rows"]})
                 continue
 
-            if name in ("sect", "chapt", "chapter", "part"):
-                # \chapter/\part (mahabharatam, adhyatmaramayanam) are plain
-                # heading macros here too, same as \sect/\chapt -- some
-                # source repos \renewcommand them with extra bookkeeping
+            if name in ("sect", "chapt", "chapter", "part", "section"):
+                # \chapter/\part/\section (mahabharatam, adhyatmaramayanam,
+                # puja-vidhanam) are plain heading macros here too, same as
+                # \sect/\chapt -- some source repos \renewcommand them with
+                # extra bookkeeping
                 # (their own running shloka-count counters, feeding a
                 # book-compile-only colophon), but that has no visible effect
                 # beyond what \sect/\chapt already do: start a new heading
@@ -650,12 +897,16 @@ def parse_blocks(text, path, warn):
                 scanner.splice(inner)
                 continue
 
+            if name in text_macros:
+                scanner.splice(text_macros[name])
+                continue
+
             warn(f"unrecognized macro \\{name}{'*' if starred else ''}, kept as literal text")
-            prose_buf.append("\\" + name + ("*" if starred else ""))
+            emit_text("\\" + name + ("*" if starred else ""))
             continue
 
         elif c == "~":
-            prose_buf.append(" ")  # TeX non-breaking space
+            emit_text(" ")  # TeX non-breaking space
             scanner.pos += 1
             continue
         elif c == "{":
@@ -669,7 +920,7 @@ def parse_blocks(text, path, warn):
             scanner.pos += 1
             continue
         else:
-            prose_buf.append(c)
+            emit_text(c)
             scanner.pos += 1
             continue
 

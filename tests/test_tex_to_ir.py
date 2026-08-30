@@ -253,5 +253,119 @@ class TestStandaloneDevanumber(unittest.TestCase):
             parse_blocks(r"\sect{t}\devanumber{x}", "t", lambda msg: None)
 
 
+class TestRenewcommandTextMacros(unittest.TestCase):
+    def test_local_renewcommand_overrides_default(self):
+        text = r"""\sect{t}
+\renewcommand{\devAya}{तुलसी-विष्णुभ्यां नमः,}
+\devAya{} आसनं समर्पयामि।
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["lines"][0], "तुलसी-विष्णुभ्यां नमः, आसनं समर्पयामि।")
+
+    def test_position_aware_across_two_redefinitions(self):
+        # A file that dedicates part of itself to one deity, then another,
+        # must not have the second \renewcommand retroactively change text
+        # already emitted before it.
+        text = r"""\sect{t}
+\renewcommand{\devAya}{A,}
+\devAya{} first.
+\renewcommand{\devAya}{B,}
+\devAya{} second.
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["lines"][0], "A, first.")
+        self.assertEqual(prose["lines"][1], "B, second.")
+
+    def test_unset_placeholder_defaults_to_preamble_value(self):
+        blocks = parse_blocks(r"\sect{t}" + "\n" + r"\ayane{} test", "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertIn("( )", prose["lines"][0])
+
+    def test_protected_macro_name_not_overridable(self):
+        text = r"""\renewcommand{\dnsub}{ignored}
+\sect{t}
+\dnsub{real subheading}
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        self.assertEqual([b["type"] for b in blocks], ["heading", "subheading"])
+        self.assertEqual(blocks[1]["text"], "real subheading")
+
+
+class TestBlankSeeKshama(unittest.TestCase):
+    def test_blank_renders_placeholder(self):
+        blocks = parse_blocks(r"\sect{t}" + "\n" + r"\blank{} test", "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertIn("( )", prose["lines"][0])
+
+    def test_see_dropped(self):
+        blocks = parse_blocks(r"\sect{t}" + "\n" + r"before\see{app:x} after", "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["lines"][0], "before after")
+
+    def test_kshama_with_name_splices_verse(self):
+        blocks = parse_blocks(r"\kshama{रामाय}", "t", lambda msg: None)
+        types = [b["type"] for b in blocks]
+        self.assertIn("subheading", types)
+        self.assertIn("verse-2", types)
+        verse2 = next(b for b in blocks if b["type"] == "verse-2")
+        self.assertIn("रामाय", verse2["lines"][1]["text"])
+
+    def test_bare_kshama_tolerates_missing_argument(self):
+        # Two shipped files invoke \kshama with no {name} at all -- must not
+        # raise, and must leave the following \closesub to be processed
+        # normally rather than swallowing it as the argument.
+        blocks = parse_blocks(r"\kshama" + "\n" + r"\closesub", "t", lambda msg: None)
+        self.assertIn("decoration", [b["type"] for b in blocks])
+
+
+class TestSpliceMacros(unittest.TestCase):
+    def test_shuklambaradharam_splices_a_real_verse(self):
+        blocks = parse_blocks(r"\shuklambaradharam", "t", lambda msg: None)
+        self.assertEqual(blocks[0]["type"], "verse-2")
+        self.assertIn("शुक्लाम्बरधरं", blocks[0]["lines"][0]["text"])
+
+
+class TestTables(unittest.TestCase):
+    def test_simple_two_column_table(self):
+        text = r"""\begin{tabular}{ll}
+पादौ & पूजयामि\\
+गुल्फौ & पूजयामि\\
+\end{tabular}
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        table = next(b for b in blocks if b["type"] == "table")
+        self.assertEqual(table["rows"], [["पादौ", "पूजयामि"], ["गुल्फौ", "पूजयामि"]])
+
+    def test_table_without_trailing_row_separator(self):
+        text = r"""\begin{tabular}{ll}
+a & b\\
+c & d
+\end{tabular}
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        table = next(b for b in blocks if b["type"] == "table")
+        self.assertEqual(table["rows"], [["a", "b"], ["c", "d"]])
+
+    def test_bare_ampersand_outside_table_is_literal(self):
+        blocks = parse_blocks(r"\sect{t}" + "\n" + "a & b", "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["lines"][0], "a & b")
+
+
+class TestEnumerateItem(unittest.TestCase):
+    def test_items_become_separate_lines(self):
+        text = r"""\sect{t}
+\begin{enumerate}
+\item first
+\item second
+\end{enumerate}
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["lines"], ["first", "second"])
+
+
 if __name__ == "__main__":
     unittest.main()
