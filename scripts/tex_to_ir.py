@@ -74,14 +74,25 @@ DROPPED_ZERO_ARG = {
     "hfill", "raggedright", "selectfont", "adjustShlokaSpaceSkip",
     "nopagebreak", "normalsize", "noindent", "centering",
 }
-DROPPED_ONE_ARG = {"label", "vspace", "setmainfont", "mbox", "hspace"}
+DROPPED_ONE_ARG = {
+    "label", "vspace", "setmainfont", "mbox", "hspace",
+    # \input{path} isn't resolved (paths often cross repo boundaries, e.g.
+    # puja-vidhanam pulling in namavali-manjari/stotra-sangrahah files, or
+    # point at kathas/ narrative content this converter doesn't handle) --
+    # dropping it silently means the including file's own text still
+    # renders correctly, just without whatever the referenced file would
+    # have added.
+    "input",
+}
 DROPPED_TWO_ARG = {"setlength"}  # lint-checked for begingroup/brace scoping
 DROPPED_TWO_ARG_NO_LINT = {"fontsize"}
 UNWRAP_ONE_ARG = {"textbf", "textsf", "textit", "emph", "centerline", "textsuperscript"}
 
 # \X for X not a letter: known literal-producing escapes (\% is already
-# unescaped during comment stripping, so it never reaches here).
-ESCAPED_SYMBOLS = {"&": "&", "_": "_", "#": "#", " ": " ", "-": ""}
+# unescaped during comment stripping, so it never reaches here). A trailing
+# "\" immediately before a newline (go-puja.tex has exactly one, a stray
+# corpus artifact with no other sensible reading) is absorbed like "\-".
+ESCAPED_SYMBOLS = {"&": "&", "_": "_", "#": "#", " ": " ", "-": "", "\n": ""}
 
 # The reliable signal for a closing colophon is the leading "इति" ("thus"),
 # not the specific closing word (सम्पूर्णम्/समाप्तम्/स्तोत्रम्/स्तवः/... all occur).
@@ -92,6 +103,12 @@ PUSHPIKA_RE = re.compile(r"॥\s*इति\s.*॥")
 ATTRIBUTION_RE = re.compile(r"^[{}\s]*-{2,3}(.+)$")
 NEWCOMMAND_RE = re.compile(r"\\newcommand\{\\([A-Za-z]+)\}")
 INLINE_STRIP_RE = re.compile(r"\\hspace\{[^{}]*\}|\\mbox\{\}|\\nobreak\b")
+# Text-styling wrappers occasionally used inside a heading/title argument
+# (e.g. gita.tex's "\textsf{---}" chapter-name separator); read_braced_arg()
+# returns that argument's raw substring unexpanded, so these need unwrapping
+# here rather than relying on the main scanner's UNWRAP_ONE_ARG dispatch,
+# which only ever sees body text, never a captured argument string.
+INLINE_UNWRAP_RE = re.compile(r"\\(?:textbf|textsf|textit|emph|centerline|textsuperscript)\{([^{}]*)\}")
 
 
 class ParseError(Exception):
@@ -257,6 +274,18 @@ class TexScanner:
         self.pos = end + 1
         return self.text[start + 1 : end]
 
+    def read_braced_or_command_arg(self):
+        """Like read_braced_arg(), but also accepts a single bare control
+        sequence (e.g. \\setlength\\columnsep{0pt} -- \\columnsep needs no
+        braces since it's already one token). Only used where the argument's
+        content is discarded, so a bare command's name doesn't need to be
+        returned meaningfully."""
+        self.skip_ws()
+        if self.peek() == "\\":
+            self.read_command()
+            return None
+        return self.read_braced_arg()
+
     def splice(self, s):
         """Re-inject text at the current position so it gets scanned normally
         on the next loop iteration -- used to unwrap \\hyperref[...]{X} and
@@ -269,6 +298,11 @@ class TexScanner:
 
 def clean_line_text(s):
     s = INLINE_STRIP_RE.sub("", s)
+    while True:
+        s2 = INLINE_UNWRAP_RE.sub(r"\1", s)
+        if s2 == s:
+            break
+        s = s2
     s = s.replace("~", " ")  # TeX non-breaking space
     return re.sub(r"\s+", " ", s).strip()
 
@@ -366,6 +400,15 @@ def parse_blocks(text, path, warn):
     scope_stack = []
     begingroup_depth = 0
     brace_depth = 0
+    # \let\X\Y aliasing (e.g. \let\chapt\sect, \let\sect\dnsub for one local
+    # macro to borrow another's behavior): resolved by name right after every
+    # \read_command(), so every dispatch branch below sees the effective name
+    # transparently. Scoped to \begingroup/\endgroup, matching how this
+    # corpus actually uses it (each \let sits inside its own begingroup so it
+    # reverts afterward) -- a bare {...} group is not tracked as a scope here
+    # since no \let in the corpus needed that.
+    aliases = {}
+    alias_stack = []
 
     def flush():
         flush_prose(prose_buf, blocks)
@@ -386,6 +429,13 @@ def parse_blocks(text, path, warn):
                 continue
 
             name, starred = scanner.read_command()
+            name = aliases.get(name, name)
+
+            if name == "let":
+                x_name, _ = scanner.read_command()
+                y_name, _ = scanner.read_command()
+                aliases[x_name] = aliases.get(y_name, y_name)
+                continue
 
             if name in ("begin", "end"):
                 envname = scanner.read_braced_arg().strip()
@@ -428,23 +478,69 @@ def parse_blocks(text, path, warn):
                         blocks.append({"type": "columns-close"})
                 continue
 
-            if name in ("sect", "chapt"):
+            if name in ("sect", "chapt", "chapter", "part"):
+                # \chapter/\part (mahabharatam, adhyatmaramayanam) are plain
+                # heading macros here too, same as \sect/\chapt -- some
+                # source repos \renewcommand them with extra bookkeeping
+                # (their own running shloka-count counters, feeding a
+                # book-compile-only colophon), but that has no visible effect
+                # beyond what \sect/\chapt already do: start a new heading
+                # and reset the per-section verse count.
                 (title,) = (scanner.read_braced_arg(),)
                 flush()
                 counter.reset()
-                blocks.append({"type": "heading", "macro": name, "text": title.strip(), "resets_counter": True})
+                blocks.append({"type": "heading", "macro": name, "text": clean_line_text(title), "resets_counter": True})
+                continue
+
+            # adhyatmaramayanam-specific: \iti{kanda}{sarga}/\itibala{kanda}{sarga}
+            # /\itikanda{text} are file-local (preamble.tex) colophon macros
+            # that close a sarga/kanda with a fixed template. Their real
+            # bodies also print a running total-shloka-count aside (book-
+            # compile bookkeeping via \newcounter/\value, not part of the
+            # verse text itself), which is intentionally not reproduced here
+            # -- would need a general LaTeX counter/\value engine for
+            # marginal value. The colophon text itself matches preamble.tex's
+            # own template verbatim.
+            if name in ("iti", "itibala"):
+                kanda = clean_line_text(scanner.read_braced_arg())
+                sarga = clean_line_text(scanner.read_braced_arg())
+                flush()
+                colophon = f"॥इति श्रीमदध्यात्मरामायणे उमामहेश्वरसंवादे {kanda} {sarga} सर्गः॥"
+                blocks.append({"type": "pushpika", "text": colophon})
+                blocks.append({"type": "decoration", "style": "closesub"})
+                continue
+
+            if name == "itikanda":
+                colophon = clean_line_text(scanner.read_braced_arg())
+                flush()
+                blocks.append({"type": "pushpika", "text": colophon})
+                blocks.append({"type": "decoration", "style": "closesection"})
                 continue
 
             if name == "dnsub":
                 (label,) = (scanner.read_braced_arg(),)
                 flush()
-                blocks.append({"type": "subheading", "macro": "dnsub", "text": label.strip()})
+                blocks.append({"type": "subheading", "macro": "dnsub", "text": clean_line_text(label)})
                 continue
 
             if name == "uvacha":
                 (speaker,) = (scanner.read_braced_arg(),)
                 flush()
-                blocks.append({"type": "uvacha", "text": speaker.strip()})
+                blocks.append({"type": "uvacha", "text": clean_line_text(speaker)})
+                continue
+
+            if name == "ifbool":
+                # \ifbool{name}{true-branch}{false-branch} (etoolbox). Used
+                # in puja-vidhanam as \ifbool{katha}{\input{kathas/...}}{} to
+                # conditionally pull in a katha narrative -- kathas/ is out
+                # of scope for this converter, so the boolean is always
+                # effectively false here; drop the whole construct rather
+                # than leak "\ifbool{katha}..." as literal text (both
+                # branches are read as raw text, not re-scanned for macros,
+                # since they're never rendered either way).
+                scanner.read_braced_arg()
+                scanner.read_braced_arg()
+                scanner.read_braced_arg()
                 continue
 
             if name in ARITY:
@@ -472,6 +568,18 @@ def parse_blocks(text, path, warn):
                 blocks.append({"type": "counter-adjust", "op": "reset"})
                 continue
 
+            if name in ("refstepcounter", "stepcounter"):
+                # adhyatmaramayanam manually bumps shlokacount this way in a
+                # few spots (e.g. BalaKanda.tex); any other counter name is a
+                # LaTeX-internal bookkeeping detail with no effect on the
+                # verse text or numbering we render, so it's just dropped.
+                ctr_name = scanner.read_braced_arg().strip()
+                flush()
+                if ctr_name == "shlokacount":
+                    counter.step()
+                    blocks.append({"type": "counter-adjust", "op": "add", "n": 1})
+                continue
+
             if name == "addtocounter":
                 arg1 = scanner.read_braced_arg().strip()
                 arg2 = scanner.read_braced_arg().strip()
@@ -497,9 +605,12 @@ def parse_blocks(text, path, warn):
 
             if name == "begingroup":
                 begingroup_depth += 1
+                alias_stack.append(dict(aliases))
                 continue
             if name == "endgroup":
                 begingroup_depth = max(0, begingroup_depth - 1)
+                if alias_stack:
+                    aliases = alias_stack.pop()
                 continue
 
             if name in DROPPED_ZERO_ARG:
@@ -512,14 +623,14 @@ def parse_blocks(text, path, warn):
                 continue
 
             if name in DROPPED_TWO_ARG:
-                scanner.read_braced_arg()
+                scanner.read_braced_or_command_arg()  # e.g. \setlength\columnsep{0pt} -- \columnsep needs no braces
                 scanner.read_braced_arg()
                 if begingroup_depth == 0 and brace_depth == 0:
                     warn(f"\\{name} outside \\begingroup/\\endgroup (or brace-group) scope")
                 continue
 
             if name in DROPPED_TWO_ARG_NO_LINT:
-                scanner.read_braced_arg()
+                scanner.read_braced_or_command_arg()
                 scanner.read_braced_arg()
                 continue
 

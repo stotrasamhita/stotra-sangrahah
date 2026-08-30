@@ -8,11 +8,21 @@ from tex_to_ir import (  # noqa: E402
     CounterModel,
     ParseError,
     TexScanner,
+    clean_line_text,
     expand_local_macros,
     parse_blocks,
     strip_comments_and_extract_meta,
     to_deva,
 )
+
+
+class TestCleanLineText(unittest.TestCase):
+    def test_unwraps_textsf_inside_a_title(self):
+        # read_braced_arg() returns a heading's argument unexpanded, so a
+        # nested \textsf{...} (gita.tex's chapter-name separator) needs
+        # unwrapping here rather than relying on the main scanner dispatch,
+        # which never sees a captured argument string.
+        self.assertEqual(clean_line_text(r"प्रथमोऽध्यायः\textsf{---}अर्जुनविषादयोगः"), "प्रथमोऽध्यायः---अर्जुनविषादयोगः")
 
 
 class TestBraceBalancing(unittest.TestCase):
@@ -123,6 +133,108 @@ class TestLocalMacroExpansion(unittest.TestCase):
         blocks = parse_blocks(body, "t", lambda msg: None)
         types = [b["type"] for b in blocks]
         self.assertIn("verse-2", types)
+
+
+class TestLetAliasing(unittest.TestCase):
+    def test_new_alias_name_behaves_as_its_target(self):
+        # \let\head\chapt: \head should act like a heading.
+        text = r"""\let\head\chapt
+\head{title}
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        self.assertEqual(blocks[0]["type"], "heading")
+        self.assertEqual(blocks[0]["text"], "title")
+
+    def test_let_is_noop_between_already_synonymous_macros(self):
+        text = r"""\let\chapt\sect
+\chapt{title}
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        self.assertEqual(blocks[0]["type"], "heading")
+
+    def test_let_reverts_after_endgroup(self):
+        # \let\sect\dnsub inside its own \begingroup/\endgroup should not
+        # leak out: \sect used afterward is still a real heading.
+        text = r"""\begingroup
+\let\sect\dnsub
+\sect{inner}
+\endgroup
+\sect{outer}
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        types_and_text = [(b["type"], b["text"]) for b in blocks]
+        self.assertIn(("subheading", "inner"), types_and_text)
+        self.assertIn(("heading", "outer"), types_and_text)
+
+
+class TestBareCommandArg(unittest.TestCase):
+    def test_setlength_accepts_bare_control_sequence_first_arg(self):
+        # \setlength\columnsep{0pt} -- \columnsep needs no braces since it's
+        # already one token; this must not raise.
+        text = r"""\setlength\columnsep{0pt}
+\sect{t}
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        self.assertEqual(blocks[0]["type"], "heading")
+
+
+class TestChapterPartAliasing(unittest.TestCase):
+    def test_chapter_and_part_are_headings(self):
+        text = r"""\part{आदिपर्व}
+\chapter{अध्यायः १}
+verse text
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        self.assertEqual([b["type"] for b in blocks[:2]], ["heading", "heading"])
+        self.assertEqual(blocks[0]["text"], "आदिपर्व")
+        self.assertEqual(blocks[1]["text"], "अध्यायः १")
+
+
+class TestAdhyatmaRamayanamColophons(unittest.TestCase):
+    def test_itibala_renders_fixed_colophon_and_closes_subsection(self):
+        blocks = parse_blocks(r"\itibala{बालकाण्डे}{प्रथमः}", "t", lambda msg: None)
+        self.assertEqual(blocks[0]["type"], "pushpika")
+        self.assertIn("बालकाण्डे", blocks[0]["text"])
+        self.assertIn("प्रथमः", blocks[0]["text"])
+        self.assertEqual(blocks[1], {"type": "decoration", "style": "closesub"})
+
+    def test_itikanda_renders_text_and_closes_section(self):
+        blocks = parse_blocks(r"\itikanda{इति बालकाण्डः समाप्तः॥}", "t", lambda msg: None)
+        self.assertEqual(blocks[0], {"type": "pushpika", "text": "इति बालकाण्डः समाप्तः॥"})
+        self.assertEqual(blocks[1], {"type": "decoration", "style": "closesection"})
+
+
+class TestRefstepcounter(unittest.TestCase):
+    def test_shlokacount_manual_bump_affects_next_verse_number(self):
+        text = r"""\sect{t}
+\refstepcounter{shlokacount}
+\onelineshloka{a}
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        verse = next(b for b in blocks if b["type"] == "verse-1")
+        self.assertEqual(verse["verse_number"], 2)
+
+    def test_other_counter_names_are_silently_dropped(self):
+        blocks = parse_blocks(r"\sect{t}\refstepcounter{sargacount}", "t", lambda msg: None)
+        self.assertEqual([b["type"] for b in blocks], ["heading"])
+
+
+class TestIfboolAndInput(unittest.TestCase):
+    def test_ifbool_dropped_entirely(self):
+        text = r"""\sect{t}
+before \ifbool{katha}{\input{kathas/some-katha.tex}}{} after
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["text"], "before after")
+
+    def test_bare_input_dropped(self):
+        text = r"""\sect{t}
+before \input{purvanga/ghanta-puja.tex} after
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["text"], "before after")
 
 
 class TestStandaloneDevanumber(unittest.TestCase):

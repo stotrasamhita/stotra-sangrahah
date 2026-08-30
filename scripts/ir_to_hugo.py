@@ -70,6 +70,32 @@ TITLE_OVERRIDES = {
     "nitya-shloka": "नित्यश्लोकाः",
     "dhyanam": "ध्यानम्",
     "kanchi-kamakshi-churnika": "श्री-कामाक्षी चूर्णिका",
+    # gita repo: mahatmyam.tex has no heading of its own (starts directly
+    # with a \dnsub subheading).
+    "mahatmyam": "गीता-माहात्म्यम्",
+    # mahabharatam/parvas: each file's first heading is the real \part{...}
+    # parva name, but every file also has many per-adhyaya \chapter{...}
+    # headings after it, so the "exactly one heading" rule below doesn't
+    # fire -- curate these explicitly instead of falling back to the
+    # slugified filename (which would show ugly things like "01 Ādiparva").
+    "01-ādiparva": "आदिपर्व",
+    "02-sabhāparva": "सभापर्व",
+    "03-araṇyaparva": "अरण्यपर्व",
+    "04-virāṭaparva-orig": "विराटपर्व",
+    "05-udyogaparva": "उद्यॊगपर्व",
+    "06-bhīṣmaparva": "भीष्मपर्व",
+    "07-droṇaparva": "द्रॊणपर्व",
+    "08-karṇaparva": "कर्णपर्व",
+    "09-śalyaparva": "शल्यपर्व",
+    "10-sauptikaparva": "सौप्तिकपर्व",
+    "11-strīparva": "स्त्रीपर्व",
+    "12-śāntiparva": "शान्तिपर्व",
+    "13-anuśāsanaparva": "अनुशासनपर्व",
+    "14-āśvamedhikaparva": "आश्वमॆधिकपर्व",
+    "15-mausalaparva": "मौसलपर्व",
+    "16-āśramavāsikaparva": "आश्रमवासिकपर्व",
+    "17-mahāprasthānikaparva": "महाप्रस्थानिकपर्व",
+    "18-svargārohaṇaparva": "स्वर्गारॊहणपर्व",
 }
 
 
