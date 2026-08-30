@@ -457,6 +457,15 @@ def parse_blocks(text, path, warn):
                 blocks.append(emit_verse_block(name, starred, args, counter))
                 continue
 
+            if name == "devanumber":
+                arg = scanner.read_braced_arg().strip()
+                try:
+                    n = int(arg)
+                except ValueError:
+                    raise ParseError(path, scanner.line_at(scanner.pos), f"\\devanumber{{{arg}}} -- non-integer argument")
+                prose_buf.append(to_deva(n))
+                continue
+
             if name == "resetShloka":
                 flush()
                 counter.reset()

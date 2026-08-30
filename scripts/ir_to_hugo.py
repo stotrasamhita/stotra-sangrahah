@@ -200,27 +200,37 @@ def render_block(block):
     return ""  # counter-adjust and anything else: nothing (shouldn't occur post-transform)
 
 
-PDF_VARIANTS = (
+# Default matches stotra-sangrahah, the first corpus this bridge supported;
+# other source repos pass their own via --pdf-repo/--pdf-variants/--strip-prefix
+# (their PDF directory names and content-source layout both differ -- e.g.
+# namavali-manjari's namavalis-pdf/<category>/<file>.pdf, with no leading
+# content-root prefix to strip since its .tex files sit at the repo root).
+DEFAULT_PDF_VARIANTS = (
     ("A5 / print", "stotras-pdf"),
     ("Kindle", "stotras-kindle-pdf"),
     ("Kindle Scribe", "stotras-kindle-scribe-pdf"),
 )
-PDF_BASE_URL = "https://raw.githubusercontent.com/stotrasamhita/stotra-sangrahah/master"
+DEFAULT_PDF_REPO = "stotrasamhita/stotra-sangrahah"
+DEFAULT_STRIP_PREFIX = "stotras/"
 
 
-def render_pdf_links(source_file):
+def render_pdf_links(source_file, pdf_repo=DEFAULT_PDF_REPO, pdf_variants=DEFAULT_PDF_VARIANTS, strip_prefix=DEFAULT_STRIP_PREFIX):
     """source_file is e.g. "stotras/hanuman/HanumanChalisa.tex" -- each PDF
     variant mirrors that same category/filename under its own top-level
-    directory in stotra-sangrahah, just with a .pdf extension."""
-    rel = source_file[len("stotras/"):] if source_file.startswith("stotras/") else source_file
+    directory in the source repo, just with a .pdf extension."""
+    if not pdf_variants:
+        return ""
+    pdf_base_url = f"https://raw.githubusercontent.com/{pdf_repo}/master"
+    rel = source_file[len(strip_prefix):] if strip_prefix and source_file.startswith(strip_prefix) else source_file
     rel_pdf = rel.rsplit(".", 1)[0] + ".pdf"
     links = "".join(
-        f'<a href="{PDF_BASE_URL}/{dirname}/{esc(rel_pdf)}">{esc(label)}</a>' for label, dirname in PDF_VARIANTS
+        f'<a href="{pdf_base_url}/{dirname}/{esc(rel_pdf)}">{esc(label)}</a>' for label, dirname in pdf_variants
     )
     return f'<div class="pdf-links"><span class="pdf-links-label">PDF:</span>{links}</div>'
 
 
-def render_body(blocks, stotra_type=None, source_file=None):
+def render_body(blocks, stotra_type=None, source_file=None, pdf_repo=DEFAULT_PDF_REPO,
+                 pdf_variants=DEFAULT_PDF_VARIANTS, strip_prefix=DEFAULT_STRIP_PREFIX):
     # hugo-book's default page template wraps .Content in <article
     # class="markdown book-article"> -- it has no class of its own we can
     # hook a stotra-specific selector to, so the verse content is wrapped in
@@ -235,7 +245,7 @@ def render_body(blocks, stotra_type=None, source_file=None):
     article_parts.extend(render_block(b) for b in blocks)
     parts = [f'<div class="stotra-article">' + "\n".join(p for p in article_parts if p) + "</div>"]
     if source_file:
-        parts.append(render_pdf_links(source_file))
+        parts.append(render_pdf_links(source_file, pdf_repo, pdf_variants, strip_prefix))
     # Single-newline-joined, no blank lines: keeps this one contiguous
     # CommonMark HTML block so goldmark passes it through verbatim, with no
     # markdown reinterpretation of Devanagari text (asterisks, underscores,
@@ -314,11 +324,33 @@ def iter_input_files(inputs):
     return paths
 
 
+def parse_pdf_variants(spec):
+    """Parses "Label=dirname,Label2=dirname2" into the PDF_VARIANTS tuple
+    shape; an empty string means no PDF links at all (e.g. a repo with only
+    one combined book PDF, not per-file PDFs)."""
+    if not spec:
+        return ()
+    pairs = []
+    for item in spec.split(","):
+        label, _, dirname = item.partition("=")
+        if not dirname:
+            raise ValueError(f"--pdf-variants entry {item!r} is not Label=dirname")
+        pairs.append((label.strip(), dirname.strip()))
+    return tuple(pairs)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Convert IR JSON to Hugo content (JSON front matter + raw HTML body).")
     ap.add_argument("input", nargs="*", default=["_build/ir"], help="IR JSON files or directories (default: _build/ir)")
     ap.add_argument("--out", default="_build/hugo-content", help="Output directory root (default: _build/hugo-content)")
+    ap.add_argument("--pdf-repo", default=DEFAULT_PDF_REPO, help="owner/repo raw.githubusercontent.com PDFs are served from")
+    ap.add_argument("--pdf-variants", default=None,
+                    help='"Label=dirname,Label2=dirname2" (default: stotra-sangrahah\'s 3 variants); pass "" for none')
+    ap.add_argument("--strip-prefix", default=DEFAULT_STRIP_PREFIX,
+                    help="leading path segment to drop from source_file before appending .pdf (default: 'stotras/')")
     args = ap.parse_args(argv)
+
+    pdf_variants = DEFAULT_PDF_VARIANTS if args.pdf_variants is None else parse_pdf_variants(args.pdf_variants)
 
     paths = iter_input_files(args.input)
     if not paths:
@@ -331,7 +363,7 @@ def main(argv=None):
         ir = json.loads(path.read_text(encoding="utf-8"))
         title, blocks = transform_blocks(ir)
         fm = build_front_matter(ir, title)
-        body = render_body(blocks, fm.get("stotra_type"), ir["source_file"])
+        body = render_body(blocks, fm.get("stotra_type"), ir["source_file"], args.pdf_repo, pdf_variants, args.strip_prefix)
         out_path = out_root / ir["category"] / f"{ir['slug']}.md"
         entries.append((ir["category"], fm, body, out_path))
 

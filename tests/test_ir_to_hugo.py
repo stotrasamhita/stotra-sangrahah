@@ -9,6 +9,7 @@ from ir_to_hugo import (  # noqa: E402
     build_front_matter,
     group_columns,
     is_blank_verse,
+    parse_pdf_variants,
     render_block,
     render_body,
     render_pdf_links,
@@ -308,6 +309,38 @@ class TestPdfLinks(unittest.TestCase):
     def test_omitted_when_no_source_file(self):
         body = render_body([{"type": "prose", "lines": ["x"]}])
         self.assertNotIn("pdf-links", body)
+
+    def test_other_repo_variants_and_strip_prefix(self):
+        out = render_pdf_links(
+            "100/Ganesha_108.tex",
+            pdf_repo="stotrasamhita/namavali-manjari",
+            pdf_variants=(("Kindle", "namavalis-kindle-pdf"),),
+            strip_prefix="",
+        )
+        self.assertIn(
+            'href="https://raw.githubusercontent.com/stotrasamhita/namavali-manjari/master/namavalis-kindle-pdf/100/Ganesha_108.pdf"',
+            out,
+        )
+        self.assertNotIn("stotras-pdf", out)
+
+    def test_empty_variants_yields_no_links(self):
+        out = render_pdf_links("100/Ganesha_108.tex", pdf_variants=(), strip_prefix="")
+        self.assertEqual(out, "")
+
+
+class TestParsePdfVariants(unittest.TestCase):
+    def test_parses_label_equals_dirname_pairs(self):
+        self.assertEqual(
+            parse_pdf_variants("A5 / print=namavalis-pdf,Kindle=namavalis-kindle-pdf"),
+            (("A5 / print", "namavalis-pdf"), ("Kindle", "namavalis-kindle-pdf")),
+        )
+
+    def test_empty_string_yields_no_variants(self):
+        self.assertEqual(parse_pdf_variants(""), ())
+
+    def test_missing_equals_raises(self):
+        with self.assertRaises(ValueError):
+            parse_pdf_variants("just-a-label")
 
 
 if __name__ == "__main__":

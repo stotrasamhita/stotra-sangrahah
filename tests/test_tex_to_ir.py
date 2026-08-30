@@ -125,5 +125,21 @@ class TestLocalMacroExpansion(unittest.TestCase):
         self.assertIn("verse-2", types)
 
 
+class TestStandaloneDevanumber(unittest.TestCase):
+    def test_inline_devanumber_becomes_deva_numeral_in_prose(self):
+        text = r"""\sect{t}
+गजाननाय~नमः\\
+ज्ञानदीपाय~नमः\hfill\devanumber{10}\\
+सुखनिधये~नमः\\
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["lines"][1], "ज्ञानदीपाय नमः१०")
+
+    def test_devanumber_non_integer_raises(self):
+        with self.assertRaises(ParseError):
+            parse_blocks(r"\sect{t}\devanumber{x}", "t", lambda msg: None)
+
+
 if __name__ == "__main__":
     unittest.main()
