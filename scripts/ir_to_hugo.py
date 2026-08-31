@@ -148,6 +148,17 @@ def transform_blocks(ir):
     return title, blocks
 
 
+# A file that would split into at least this many chapters is split
+# automatically, regardless of --split-chapters -- e.g. a puja-vidhanam file
+# whose katha \input{}s got resolved inline can balloon to 30-60 headings
+# (one per mahatmya/story), which makes an unusably long single page.
+# Verified against the full corpus before picking this: the file with the
+# most headings that should legitimately stay one page (stotra-sangrahah's
+# NityaShloka.tex, 11 independent dhyana verses bundled together) tops out
+# at 11; every puja-vidhanam file that actually needs splitting has 31+.
+AUTO_SPLIT_MIN_CHAPTERS = 15
+
+
 def split_into_chapters(title, blocks):
     """For a --split-chapters run: splits a multi-heading book (gita.tex's 18
     adhyayas; a kanda/parva's many sargas/adhyayas) into
@@ -174,6 +185,15 @@ def split_into_chapters(title, blocks):
         end = chapter_idxs[j + 1] if j + 1 < len(chapter_idxs) else len(blocks)
         chapters.append((blocks[idx]["text"], blocks[idx:end]))
     return chapters
+
+
+def should_split_into_chapters(chapters, force):
+    """Whether to actually use split_into_chapters()'s result: explicitly
+    requested via --split-chapters (gita.tex/kandas/parvas, always book-
+    shaped), or automatically because the file has enough chapters that one
+    giant page would be unwieldy (see AUTO_SPLIT_MIN_CHAPTERS) -- e.g. a
+    puja-vidhanam file whose katha \\input{}s got resolved inline."""
+    return bool(chapters) and (force or len(chapters) >= AUTO_SPLIT_MIN_CHAPTERS)
 
 
 # ---------------------------------------------------------------------------
@@ -455,7 +475,9 @@ def main(argv=None):
     for path in paths:
         ir = json.loads(path.read_text(encoding="utf-8"))
         title, blocks = transform_blocks(ir)
-        chapters = split_into_chapters(title, blocks) if args.split_chapters else None
+        chapters = split_into_chapters(title, blocks)
+        if not should_split_into_chapters(chapters, args.split_chapters):
+            chapters = None
 
         if chapters is None:
             fm = build_front_matter(ir, title)

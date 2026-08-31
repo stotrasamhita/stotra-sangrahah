@@ -5,6 +5,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from ir_to_hugo import (  # noqa: E402
+    AUTO_SPLIT_MIN_CHAPTERS,
     assign_weights,
     build_front_matter,
     group_columns,
@@ -13,6 +14,7 @@ from ir_to_hugo import (  # noqa: E402
     render_block,
     render_body,
     render_pdf_links,
+    should_split_into_chapters,
     split_into_chapters,
     transform_blocks,
 )
@@ -153,6 +155,30 @@ class TestChapterSplitting(unittest.TestCase):
         ]
         chapters = split_into_chapters("Z", blocks)
         self.assertEqual(len(chapters[1][1]), 3)  # B's heading + both prose blocks
+
+
+class TestAutoSplitThreshold(unittest.TestCase):
+    def test_below_threshold_not_forced_stays_single_page(self):
+        # A normal short puja page (a handful of headings) shouldn't be
+        # fragmented into tiny chapter pages just because it has >1 heading.
+        chapters = [(f"h{i}", []) for i in range(AUTO_SPLIT_MIN_CHAPTERS - 1)]
+        self.assertFalse(should_split_into_chapters(chapters, force=False))
+
+    def test_at_or_above_threshold_split_even_without_flag(self):
+        # A puja-vidhanam file whose resolved katha \input{}s pushed it past
+        # the threshold (e.g. one heading per mahatmya) splits automatically,
+        # with no --split-chapters flag needed.
+        chapters = [(f"h{i}", []) for i in range(AUTO_SPLIT_MIN_CHAPTERS)]
+        self.assertTrue(should_split_into_chapters(chapters, force=False))
+
+    def test_explicit_flag_splits_regardless_of_count(self):
+        # gita.tex/kandas/parvas: always split via the explicit flag, even
+        # if a particular book happens to have few chapters.
+        chapters = [("only one", [])]
+        self.assertTrue(should_split_into_chapters(chapters, force=True))
+
+    def test_none_chapters_never_splits(self):
+        self.assertFalse(should_split_into_chapters(None, force=True))
 
 
 class TestBlankVerseFilter(unittest.TestCase):
