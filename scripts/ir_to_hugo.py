@@ -346,6 +346,25 @@ CATEGORY_ORDER_OVERRIDES = {
         "mahatmyam", "bala-kanda", "ayodhya-kanda", "aranya-kanda", "kishkindha-kanda",
         "sundara-kanda", "yuddha-kanda", "uttara-kanda",
     ],
+    # puja-vidhanam's own pujas.tex lists every puja's \input{} in this
+    # order (grouped there under \part{} headings by occasion type); its
+    # filenames don't sort alphabetically into that order, so it's spelled
+    # out here too. rudra-prashnah isn't \input{} by pujas.tex at all and
+    # sorts last; shivaratri-yama-{1,2,3,4}-puja and MahaNyasah are only
+    # ever reached via shivaratri-puja.tex's own \input{} chain (nested
+    # in as its sub-sections), so they're excluded from the standalone
+    # per-file build entirely rather than listed here.
+    "pujas": [
+        "laghu-panchayatana-puja", "surya-arghyam", "ekadashi-purusha-sukta-vidhana-puja",
+        "sankataharachaturthi-vinayaka-puja", "panchanga-puja", "sriramanavami-puja",
+        "shankara-jayanti-puja", "nrisimha-jayanti-puja", "chitragupta-puja", "vyasa-puja",
+        "varamahalakshmi-puja", "yajur-upakarma", "janmashtami-puja", "siddhivinayaka-puja",
+        "uma-maheshvara-puja", "sarasvati-puja", "dhanvantari-puja", "lakshmi-kubera-puja",
+        "skanda-shashthi-puja", "brindavana-puja", "surya-puja", "go-puja", "shivaratri-puja",
+        "savitri-vratam", "sankramana-snanam", "shravana-mahatmyam", "kartika-somavara-arghyam",
+        "kartika-mahatmyam", "ganga-puja", "kaveri-puja", "surya-namaskara", "yama-tarpanam",
+        "bhishma-tarpanam",
+    ],
 }
 
 

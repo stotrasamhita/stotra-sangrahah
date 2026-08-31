@@ -1,4 +1,6 @@
+import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -268,7 +270,9 @@ class TestRefstepcounter(unittest.TestCase):
 
 
 class TestIfboolAndInput(unittest.TestCase):
-    def test_ifbool_dropped_entirely(self):
+    def test_ifbool_katha_true_branch_unresolvable_input_still_drops_silently(self):
+        # katha=true now, but the referenced file doesn't exist here --
+        # \input itself still silently drops in that case.
         text = r"""\sect{t}
 before \ifbool{katha}{\input{kathas/some-katha.tex}}{} after
 """
@@ -276,13 +280,67 @@ before \ifbool{katha}{\input{kathas/some-katha.tex}}{} after
         prose = next(b for b in blocks if b["type"] == "prose")
         self.assertEqual(prose["text"], "before after")
 
-    def test_bare_input_dropped(self):
+    def test_ifbool_unknown_bool_name_dropped_entirely(self):
+        text = r"""\sect{t}
+before \ifbool{somethingelse}{X}{Y} after
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["text"], "before after")
+
+    def test_ifbool_veda_uses_false_branch(self):
+        text = r"\ifbool{veda}{\sect{vedic}}{\sect{regular}}"
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        self.assertEqual([b["text"] for b in blocks if b["type"] == "heading"], ["regular"])
+
+    def test_bare_input_unresolvable_dropped(self):
         text = r"""\sect{t}
 before \input{purvanga/ghanta-puja.tex} after
 """
         blocks = parse_blocks(text, "t", lambda msg: None)
         prose = next(b for b in blocks if b["type"] == "prose")
         self.assertEqual(prose["text"], "before after")
+
+    def test_cross_repo_input_left_unresolved(self):
+        text = r"before \input{../namavali-manjari/100/Ganga_108.tex} after"
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["text"], "before after")
+
+    def test_same_repo_input_resolves_and_splices_real_content(self):
+        # A same-repo, relative-to-repo-root \input{} (this corpus's own
+        # convention, e.g. pujas.tex's \input{pujas/foo} and
+        # shivaratri-puja.tex's own \input{pujas/shivaratri-yama-1-puja})
+        # should read the target and splice it in for real parsing --
+        # a nested \sect must show up as a real heading, not literal text.
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "pujas").mkdir()
+            (Path(tmp) / "pujas" / "child.tex").write_text(r"\dnsub{नेस्टेड-अनुभागः}" + "\n", encoding="utf-8")
+            cwd = os.getcwd()
+            os.chdir(tmp)
+            try:
+                text = r"\sect{parent}" + "\n" + r"\input{pujas/child}" + "\n"
+                blocks = parse_blocks(text, "t", lambda msg: None)
+            finally:
+                os.chdir(cwd)
+        self.assertEqual(
+            [(b["type"], b["text"]) for b in blocks],
+            [("heading", "parent"), ("subheading", "नेस्टेड-अनुभागः")],
+        )
+
+    def test_ifbool_katha_splices_resolvable_input(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "kathas").mkdir()
+            (Path(tmp) / "kathas" / "some-katha.tex").write_text(r"\dnsub{कथा}" + "\n", encoding="utf-8")
+            cwd = os.getcwd()
+            os.chdir(tmp)
+            try:
+                text = r"\sect{t}" + "\n" + r"\ifbool{katha}{\input{kathas/some-katha}}{}" + "\n"
+                blocks = parse_blocks(text, "t", lambda msg: None)
+            finally:
+                os.chdir(cwd)
+        self.assertEqual([b["type"] for b in blocks], ["heading", "subheading"])
+        self.assertEqual(blocks[1]["text"], "कथा")
 
 
 class TestStandaloneDevanumber(unittest.TestCase):
@@ -422,6 +480,171 @@ class TestEnumerateItem(unittest.TestCase):
         blocks = parse_blocks(text, "t", lambda msg: None)
         prose = next(b for b in blocks if b["type"] == "prose")
         self.assertEqual(prose["lines"], ["first", "second"])
+
+
+class TestNamedCounters(unittest.TestCase):
+    def test_newcounter_refstepcounter_arabic_roundtrip(self):
+        text = r"""\sect{t}
+\newcounter{dik}
+\refstepcounter{dik}
+पूर्वस्यां नमः। \devanumber{\arabic{dik}}
+\refstepcounter{dik}
+दक्षिणस्यां नमः। \devanumber{\arabic{dik}}
+"""
+        # \refstepcounter flushes the current prose block (like \resetShloka
+        # does), so the two sentences land in separate prose blocks.
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        prose_blocks = [b for b in blocks if b["type"] == "prose"]
+        self.assertEqual(prose_blocks[0]["lines"][0], "पूर्वस्यां नमः। १")
+        self.assertEqual(prose_blocks[1]["lines"][0], "दक्षिणस्यां नमः। २")
+
+    def test_unregistered_named_counter_defaults_to_zero(self):
+        blocks = parse_blocks(r"\sect{t}" + "\n" + r"\devanumber{\arabic{neverdeclared}}", "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["lines"][0], "०")
+
+    def test_setcounter_shlokacount_from_named_counter_syncs_real_counter(self):
+        # MahaNyasah.tex's \ssankalpaalign pattern: sync shlokacount to a
+        # separately-tracked counter's value before a numbered verse.
+        text = r"""\sect{t}
+\newcounter{ssk}
+\refstepcounter{ssk}
+\refstepcounter{ssk}
+\setcounter{shlokacount}{\value{ssk}}
+\twolineshloka{A}{B}
+"""
+        # ssk is stepped to 2, shlokacount is synced to that 2, and then
+        # \twolineshloka's own CounterModel.step() advances it to 3 (matching
+        # the real macro: \setcounter{shlokacount}{\value{ssk}} happens
+        # *before* the verse steps its own counter).
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        verse = next(b for b in blocks if b["type"] == "verse-2")
+        self.assertEqual(verse["verse_number"], 3)
+
+    def test_setcounter_unknown_counter_dropped_without_crashing(self):
+        blocks = parse_blocks(r"\sect{t}" + "\n" + r"\setcounter{page}{0} after", "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["lines"][0], "after")
+
+    def test_addtocounter_named_counter_then_arabic(self):
+        text = r"""\sect{t}
+\newcounter{n}
+\addtocounter{n}{5}
+\devanumber{\arabic{n}}
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["lines"][0], to_deva(5))
+
+
+class TestRawDefSkipped(unittest.TestCase):
+    def test_def_with_param_text_and_raw_tex_body_is_skipped(self):
+        # surya-namaskara.tex: \def\vhrulefill#1{\leavevmode\leaders\hrule
+        # \@height#1\hfill \kern\z@} -- \@height isn't a tokenizable command
+        # name for this parser, so the whole definition must be skipped
+        # rather than re-entering the main dispatch loop.
+        text = r"""\sect{t}
+\makeatletter
+\def\vhrulefill#1{\leavevmode\leaders\hrule\@height#1\hfill \kern\z@}
+\makeatother
+after
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["lines"][0], "after")
+
+
+class TestIfboolIndividual(unittest.TestCase):
+    def test_individual_true_branch_spliced_like_katha(self):
+        text = r"\ifbool{individual}{\sect{shown}}{\sect{hidden}}"
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        self.assertEqual([b["text"] for b in blocks if b["type"] == "heading"], ["shown"])
+
+
+class TestTextMacroInsideCapturedArguments(unittest.TestCase):
+    def test_devaname_inside_verse_line_is_substituted(self):
+        # purvanga/kalasha-puja.tex: "आयान्तु \devaName{}पूजार्थं..." inside a
+        # \twolineshloka{} argument -- captured as a raw substring by
+        # read_braced_arg(), so it never reaches the main dispatch loop's
+        # own text_macros splice and must be substituted in clean_line_text.
+        text = r"""\sect{t}
+\renewcommand{\devaName}{विष्णु}
+\twolineshloka
+{आयान्तु \devaName{}पूजार्थं दुरितक्षयकारकाः}
+{द्वितीयं पादम्}
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        verse = next(b for b in blocks if b["type"] == "verse-2")
+        self.assertIn("आयान्तु विष्णुपूजार्थं दुरितक्षयकारकाः", verse["lines"][0]["text"])
+
+    def test_devaname_inside_dnsub_label_is_substituted(self):
+        text = r"""\sect{t}
+\renewcommand{\devaName}{शिव}
+\dnsub{\devaName{} ध्यानम्}
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        subheading = next(b for b in blocks if b["type"] == "subheading")
+        self.assertEqual(subheading["text"], "शिव ध्यानम्")
+
+
+class TestVerseArgLeniency(unittest.TestCase):
+    def test_stray_danda_between_args_skipped(self):
+        text = r"""\sect{t}
+\twolineshloka
+{पद्यं प्रथमम्}।
+{पद्यं द्वितीयम्}
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        verse = next(b for b in blocks if b["type"] == "verse-2")
+        self.assertEqual(verse["lines"][1]["text"], "पद्यं द्वितीयम्")
+
+    def test_missing_second_arg_before_next_command_becomes_empty(self):
+        # A macro missing an argument (e.g. one line of a couplet never
+        # supplied) must not swallow the *next* command's name character by
+        # character looking for a brace -- it should be treated as an empty
+        # argument, leaving the next \twolineshloka intact for its own
+        # dispatch.
+        text = r"""\sect{t}
+\twolineshloka
+{only one line supplied}
+
+\twolineshloka
+{next verse first line}
+{next verse second line}
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        verses = [b for b in blocks if b["type"] == "verse-2"]
+        self.assertEqual(len(verses), 2)
+        self.assertEqual(verses[0]["lines"][1]["text"], "")
+        self.assertEqual(verses[1]["lines"][0]["text"], "next verse first line")
+        self.assertEqual(verses[1]["lines"][1]["text"], "next verse second line")
+
+
+class TestMiscDroppedAndUnwrapped(unittest.TestCase):
+    def test_underline_and_fbox_keep_content(self):
+        blocks = parse_blocks(r"\sect{t}" + "\n" + r"\underline{a} \fbox{b}", "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["lines"][0], "a b")
+
+    def test_parbox_keeps_content_drops_width_and_position(self):
+        blocks = parse_blocks(r"\sect{t}" + "\n" + r"\parbox[t]{0.8\linewidth}{kept text}", "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["lines"][0], "kept text")
+
+    def test_multicolumn_keeps_cell_content_in_table(self):
+        text = r"""\sect{t}
+\begin{tabular}{ll}
+\multicolumn{2}{l}{spanning text} & tail \\
+\end{tabular}
+"""
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        table = next(b for b in blocks if b["type"] == "table")
+        self.assertEqual(table["rows"], [["spanning text", "tail"]])
+
+    def test_lbrack_rbrack_become_brackets(self):
+        blocks = parse_blocks(r"\sect{t}" + "\n" + r"\lbrack text\rbrack", "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["lines"][0], "[ text]")
 
 
 if __name__ == "__main__":

@@ -75,7 +75,7 @@ ENDING_TABLE = {
     ),
 }
 
-STRUCTURAL_BEGIN_END = {"center", "large", "Large", "minipage", "flushleft", "enumerate", "itemize"}
+STRUCTURAL_BEGIN_END = {"center", "large", "Large", "minipage", "flushleft", "flushright", "enumerate", "itemize"}
 COLUMN_ENVIRONMENTS = {"multicols", "AutoCols"}
 TABLE_ENVIRONMENTS = {"tabular", "supertabular", "longtable"}
 
@@ -85,7 +85,7 @@ DROPPED_ZERO_ARG = {
     "nopagebreak", "normalsize", "noindent", "centering",
     # font-size/family switches: no visible effect on the page (CSS already
     # sets one consistent font throughout .stotra-article).
-    "bfseries", "sffamily", "scriptsize", "small", "large", "footnotesize",
+    "bfseries", "sffamily", "scriptsize", "small", "large", "footnotesize", "LARGE",
     # FontAwesome clock icon (puja-vidhanam's practical-timing notes,
     # e.g. "\faClockO{} {\sffamily This must be offered thrice every day...}") --
     # decorative, dropped rather than reproduced as an emoji/icon.
@@ -96,26 +96,45 @@ DROPPED_ZERO_ARG = {
     # hyperref PDF-bookmark anchor; vertical-skip spacing tweak: neither has
     # a visible effect here.
     "phantomsection", "shlokavskip",
+    # print-only pagination/column-layout hints, no web equivalent.
+    "pagebreak", "linebreak", "vfill", "columnbreak",
+    # plain-TeX preamble markers around raw \def-based macro definitions
+    # (e.g. surya-namaskara.tex's \makeatletter\def\vhrulefill#1{...}
+    # \makeatother) -- \def itself is handled by its own dispatch below,
+    # which skips these entirely, so the markers have nothing left to do.
+    "makeatletter", "makeatother",
+    # rudra-prashnah.tex: bare "\sn"/"\ar" mid-mantra, with no braced
+    # argument and no \newcommand definition anywhere in this corpus --
+    # stray backslashes in the source (typo), not real macros; dropped
+    # rather than leaked as literal text.
+    "sn", "ar",
 }
 DROPPED_ONE_ARG = {
     "label", "vspace", "setmainfont", "mbox", "hspace",
-    # \input{path} isn't resolved (paths often cross repo boundaries, e.g.
-    # puja-vidhanam pulling in namavali-manjari/stotra-sangrahah files, or
-    # point at kathas/ narrative content this converter doesn't handle) --
-    # dropping it silently means the including file's own text still
-    # renders correctly, just without whatever the referenced file would
-    # have added.
-    "input",
     # print-only citation/pagination hints, no web equivalent to reproduce.
     "footnotetext", "footnote", "needspace",
     # standalone \value{counter} (outside \footnotemark[\value{footnote}],
     # already handled above): no other counter in this corpus is read this
     # way, so it's just dropped rather than resolved.
     "value",
+    # image inclusion: this converter has no image pipeline, so both the
+    # search-path declaration and each \includegraphics{} (with its usual
+    # \includegraphics[width=...]{path} optional sizing) are dropped
+    # wholesale, path and all.
+    "graphicspath", "includegraphics",
 }
 DROPPED_TWO_ARG = {"setlength", "addtolength"}  # lint-checked for begingroup/brace scoping
 DROPPED_TWO_ARG_NO_LINT = {"fontsize", "markboth"}  # markboth: print page-header bookmarking, no visible effect
-UNWRAP_ONE_ARG = {"textbf", "textsf", "textit", "emph", "centerline", "textsuperscript"}
+UNWRAP_ONE_ARG = {
+    "textbf", "textsf", "textit", "emph", "centerline", "textsuperscript",
+    # styling/box wrappers with no web equivalent worth reproducing --
+    # content kept, wrapper dropped.
+    "underline", "fbox",
+    # \rlap{text} (purvanga/prana-pratishtha.tex's verse citation, e.g.
+    # "...स्वस्ति॥\rlap{ऋक्~१०.५९.६॥}"): a zero-width print overlay trick,
+    # rendered here as ordinary trailing text instead.
+    "rlap",
+}
 
 # \X for X not a letter: known literal-producing escapes (\% is already
 # unescaped during comment stripping, so it never reaches here). A trailing
@@ -209,6 +228,93 @@ SPLICE_MACROS = {
             "additionalSankalpa": "", "kaale": "", "prakaarena": "", "prityartham": "", "pujaam": "",
         }.items()
     ) + "\n" + r"\renewcommand{\regularSankalpa}{%s}" % PUJA_TEXT_MACRO_DEFAULTS["regularSankalpa"],
+    # purana-dhyana-shloka.tex's own 0-arg macros, invoked at the top of
+    # several kathas (e.g. shivaratri-vrata-katha-linga-puranam.tex,
+    # ekadashi-mahatmyam-padma-puranam.tex) that \input{} it for these
+    # definitions but are parsed here independently of that file (each
+    # \input{} target is preprocessed/expanded on its own, so a katha file
+    # can't pick up a *different* file's \newcommand this way) -- so, as
+    # with the preamble.tex macros above, transcribed directly instead.
+    "ganapatyadiDhyanam": r"""
+\dnsub{श्री-महागणपति-प्रार्थना}
+\twolineshloka*
+{शुक्लाम्बरधरं विष्णुं शशिवर्णं चतुर्भुजम्}
+{प्रसन्नवदनं ध्यायेत् सर्वविघ्नोपशान्तये}
+\twolineshloka*
+{वागीशाद्याः सुमनसः सर्वार्थानामुपक्रमे}
+{यं नत्वा कृतकृत्याः स्युस्तं नमामि गजाननम्}
+\dnsub{श्री-गुरु-प्रार्थना}
+\twolineshloka*
+{गुरुर्ब्रह्मा गुरुर्विष्णुर्गुरुर्देवो महेश्वरः}
+{गुरुः साक्षात् परं ब्रह्म तस्मै श्री-गुरवे नमः}
+\twolineshloka*
+{सदाशिवसमारम्भां शङ्कराचार्यमध्यमाम्}
+{अस्मदाचार्यपर्यन्तां वन्दे गुरुपरम्पराम्}
+\dnsub{श्री-सरस्वती-प्रार्थना}
+\fourlineindentedshloka*
+{दोर्भिर्युक्ता चतुर्भिः स्फटिकमणिनिभैरक्षमालां दधाना}
+{हस्तेनैकेन पद्मं सितमपि च शुकं पुस्तकं चापरेण}
+{भासा कुन्देन्दुशङ्खस्फटिकमणिनिभा भासमानाऽसमाना}
+{सा मे वाग्देवतेयं निवसतु वदने सर्वदा सुप्रसन्ना}
+\dnsub{श्री-व्यास-नमस्क्रिया}
+\resetShloka
+\twolineshloka
+{व्यासं वसिष्ठनप्तारं शक्तेः पौत्रमकल्मषम्}
+{पराशरात्मजं वन्दे शुकतातं तपोनिधिम्}
+\fourlineindentedshloka
+{अभ्रश्यामः पिङ्गजटाबद्धकलापः}
+{प्रांशुर्दण्डी कृष्णमृगत्वक्परिधानः}
+{साक्षाल्लोकान् पावयमानः कविमुख्यः}
+{पाराशर्यः पर्वसु रूपं विवृणोतु}
+\twolineshloka
+{जयति पराशरसूनुः सत्यवतीहृदयनन्दनो व्यासः}
+{यस्यास्यकमलगलितं वाङ्मयममृतं जगत् पिबति}
+\resetShloka
+""",
+    "genMangalaShloka": r"""
+\dnsub{मङ्गलश्लोकाः}
+\fourlineindentedshloka*
+{स्वस्ति प्रजाभ्यः परिपालयन्तां}
+{न्यायेन मार्गेण महीं महीशाः}
+{गोब्राह्मणेभ्यः शुभमस्तु नित्यं}
+{लोकाः समस्ताः सुखिनो भवन्तु}
+\twolineshloka*
+{काले वर्षतु पर्जन्यः पृथिवी सस्यशालिनी}
+{देशोऽयं क्षोभरहितो ब्राह्मणाः सन्तु निर्भयाः}
+\twolineshloka*
+{अपुत्राः पुत्रिणः सन्तु पुत्रिणः सन्तु पौत्रिणः}
+{अधनाः सधनाः सन्तु जीवन्तु शरदां शतम्}
+\twolineshloka*
+{यदक्षरपदभ्रष्टं मात्राहीनं तु यद् भवेत्}
+{तत् सर्वं क्षम्यतां देव नारायण नमोऽस्तुते}
+\twolineshloka*
+{विसर्गबिन्दुमात्राश्च पदपादाक्षराणि च}
+{न्यूनानि चातिरिक्तानि क्षमस्व पुरुषोत्तम}
+\twolineshloka*
+{यज्ञेशाच्युत गोविन्द माधवानन्त केशव}
+{कृष्ण विष्णो हृषीकेश वासुदेव नमोऽस्तुते}
+\fourlineindentedshloka*
+{कायेन वाचा मनसेन्द्रियैर्वा}
+{बुद्‌ध्याऽऽत्मना वा प्रकृतेः स्वभावात्}
+{करोमि यद्यत् सकलं परस्मै}
+{नारायणायेति समर्पयामि}
+""",
+    "lingaPuranam": r"""
+\dnsub{लिङ्गपुराणम् — मङ्गलश्लोकः}
+\twolineshloka*
+{नमो रुद्राय हरये ब्रह्मणे परमात्मने}
+{प्रधानपुरुषेशाय सर्गस्थित्यन्तकारिणे}
+\nArAyaNam
+""",
+    "padmaPuranam": r"""
+\dnsub{पाद्ममहापुराणम् — मङ्गलश्लोकः}
+\fourlineindentedshloka*
+{स्वच्छं चन्द्रावदातं करिकर-मकर-क्षोभ-सञ्जात-फेनं}
+{ब्रह्मोद्भूतिप्रसक्तैर्व्रतनियमपरैः सेवितं विप्रमुख्यैः}
+{ओङ्कारालङ्कृतेन त्रिभुवनगुरुणा ब्रह्मणा दृष्टिपूतं}
+{सम्भोगाभोगरम्यं जलमशुभहरं पौष्करं नः पुनातु}
+\nArAyaNam
+""",
 }
 
 # \kshama{name} (1-arg): an "apology for deficiencies in this worship" verse
@@ -227,7 +333,8 @@ KSHAMA_TEMPLATE = (
 PROTECTED_MACRO_NAMES = (
     {"sect", "chapt", "chapter", "part", "dnsub", "uvacha", "devanumber", "resetShloka",
      "addtocounter", "refstepcounter", "stepcounter", "ifbool", "input", "let", "renewcommand",
-     "begingroup", "endgroup", "closesection", "closesub", "blank", "see", "kshama"}
+     "begingroup", "endgroup", "closesection", "closesub", "blank", "see", "kshama",
+     "setcounter", "newcounter", "arabic", "def", "parbox", "multicolumn"}
     | set(ARITY) | set(SPLICE_MACROS)
 )
 
@@ -444,7 +551,21 @@ class TexScanner:
         self.n = len(self.text)
 
 
-def clean_line_text(s):
+def clean_line_text(s, text_macros=None):
+    if text_macros:
+        # A 0-arg text-macro placeholder (e.g. \devaName, renewcommand'd
+        # per-file from preamble.tex's default -- see
+        # PUJA_TEXT_MACRO_DEFAULTS) can appear *inside* a verse macro's
+        # braced argument (e.g. purvanga/kalasha-puja.tex's "आयान्तु
+        # \devaName{}पूजार्थं..." inside a \twolineshloka{} line). That text
+        # is captured as a raw substring by read_braced_arg() and never
+        # re-enters the main dispatch loop where text_macros lookups
+        # normally happen, so it's substituted here instead.
+        for name, value in text_macros.items():
+            # lambda replacement: a renewcommand'd value is arbitrary text
+            # and must never be interpreted for backreferences (e.g. a
+            # literal "\1") the way a raw replacement string would be.
+            s = re.sub(r"\\" + re.escape(name) + r"\b(\{\})?", lambda m, v=value: v, s)
     s = INLINE_STRIP_RE.sub("", s)
     while True:
         s2 = INLINE_UNWRAP_RE.sub(r"\1", s)
@@ -511,6 +632,32 @@ def expand_local_macros(text, path):
             text = expand_macro_invocations(text, path, name, n, body)
 
 
+def resolve_input(rel_path, warn):
+    """Reads and preprocesses a \\input{path} target for splicing inline, if
+    it's a same-repo reference this corpus's own conventions make safely
+    resolvable: always relative to the repo root (matching how e.g.
+    pujas.tex itself -- at the repo root -- writes \\input{pujas/foo}, and
+    shivaratri-puja.tex -- itself inside pujas/ -- writes the same
+    pujas/-prefixed form, not a path relative to its own directory), never
+    a "../" cross-repo reference (puja-vidhanam pulling in namavali-manjari/
+    stotra-sangrahah files this way is real, but resolving another repo's
+    files is out of scope here -- this converter processes one repo's files
+    per run). Returns None (leaving the \\input silently dropped, as before)
+    if the path is cross-repo, doesn't exist, or can't be read as UTF-8."""
+    if rel_path.startswith("../") or rel_path.startswith("/"):
+        return None
+    candidate = Path(rel_path if rel_path.endswith(".tex") else rel_path + ".tex")
+    if not candidate.is_file():
+        return None
+    try:
+        text = candidate.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        warn(f"\\input{{{rel_path}}}: {candidate} is not valid UTF-8, left unresolved")
+        return None
+    body, _ = strip_comments_and_extract_meta(text)
+    return expand_local_macros(body, str(candidate))
+
+
 def _prose_block(lines):
     return {"type": "prose", "lines": list(lines), "text": " ".join(lines)}
 
@@ -543,7 +690,7 @@ def flush_prose(buf, blocks):
         blocks.append(_prose_block(prose_lines))
 
 
-def emit_verse_block(name, starred, args, counter):
+def emit_verse_block(name, starred, args, counter, text_macros=None):
     citation = None
     verse_args = args
     if name == "annotwolineshloka":
@@ -564,7 +711,7 @@ def emit_verse_block(name, starred, args, counter):
     pada_tags = (["odd", "even"] * len(verse_args))[: len(verse_args)] if name in INDENTED_MACROS else [None] * len(verse_args)
 
     lines = [
-        {"pada": pada, "text": clean_line_text(text), "ending": ending}
+        {"pada": pada, "text": clean_line_text(text, text_macros), "ending": ending}
         for text, pada, ending in zip(verse_args, pada_tags, endings)
     ]
 
@@ -576,8 +723,26 @@ def emit_verse_block(name, starred, args, counter):
         "lines": lines,
     }
     if citation is not None:
-        block["citation"] = clean_line_text(citation)
+        block["citation"] = clean_line_text(citation, text_macros)
     return block
+
+
+NAMED_COUNTER_REF_RE = re.compile(r"^\\(?:arabic|value)\{(\w+)\}$")
+
+
+def resolve_scalar_arg(arg, counter, named_counters):
+    """Resolves a \\devanumber{...}/\\addtocounter{...}{...} argument that may
+    be a literal integer, or a \\arabic{name}/\\value{name} reference to a
+    counter's current value (shlokacount, tracked by `counter`, or any other
+    name registered via \\newcounter and stepped by \\refstepcounter/
+    \\stepcounter). Raises ValueError for anything else, same as a bare
+    int(arg) would."""
+    arg = arg.strip()
+    m = NAMED_COUNTER_REF_RE.match(arg)
+    if m:
+        name = m.group(1)
+        return counter.value if name == "shlokacount" else named_counters.get(name, 0)
+    return int(arg)
 
 
 def parse_blocks(text, path, warn):
@@ -603,6 +768,12 @@ def parse_blocks(text, path, warn):
     # that point in the document onward, matching real LaTeX semantics
     # (unlike expand_local_macros()'s whole-document textual substitution).
     text_macros = dict(PUJA_TEXT_MACRO_DEFAULTS)
+    # \newcounter{name}/\refstepcounter{name}/\stepcounter{name}/\arabic{name}:
+    # a running value per counter *other* than shlokacount (which the
+    # CounterModel above already owns) -- e.g. MahaNyasah.tex's \newcounter{dik}
+    # counts through the 9 directions of its ritual diagram, read back via
+    # \devanumber{\arabic{dik}}.
+    named_counters = {}
     # \begin{tabular}/\{supertabular}/\{longtable}: a stack of
     # {"rows": [...], "current_row": [...], "cell_buf": [...]} accumulators
     # (a stack, not a single value, in case of nested tables). While one is
@@ -628,7 +799,7 @@ def parse_blocks(text, path, warn):
 
         if table_stack and c == "&":
             tbl = table_stack[-1]
-            tbl["current_row"].append(clean_line_text("".join(tbl["cell_buf"])))
+            tbl["current_row"].append(clean_line_text("".join(tbl["cell_buf"]), text_macros))
             tbl["cell_buf"] = []
             scanner.pos += 1
             continue
@@ -640,7 +811,7 @@ def parse_blocks(text, path, warn):
                 scanner.read_bracket_arg()
                 if table_stack:
                     tbl = table_stack[-1]
-                    tbl["current_row"].append(clean_line_text("".join(tbl["cell_buf"])))
+                    tbl["current_row"].append(clean_line_text("".join(tbl["cell_buf"]), text_macros))
                     tbl["cell_buf"] = []
                     tbl["rows"].append(tbl["current_row"])
                     tbl["current_row"] = []
@@ -659,6 +830,37 @@ def parse_blocks(text, path, warn):
                 x_name, _ = scanner.read_command()
                 y_name, _ = scanner.read_command()
                 aliases[x_name] = aliases.get(y_name, y_name)
+                continue
+
+            if name == "def":
+                # Raw plain-TeX \def<cs><param-text>{<body>} (e.g.
+                # surya-namaskara.tex's \def\vhrulefill#1{\leavevmode\leaders
+                # \hrule\@height#1\hfill \kern\z@}) defines a pure print-
+                # layout helper (rule-drawing) with no verse text and uses
+                # raw control sequences like \@height that this parser's
+                # command reader can't tokenize (CMD_RE is [A-Za-z]+ only).
+                # Skip the whole definition -- name, parameter text, body --
+                # rather than expanding or re-parsing it.
+                save_pos = scanner.pos
+                try:
+                    scanner.read_command()
+                except ParseError:
+                    # \def<symbol>... (e.g. KanchiSwastiVachanam.tex's
+                    # \catcode`==\active \def={\discretionary{-}{}{-}}, an
+                    # active-character line-break hint -- not a nameable
+                    # control sequence this parser's CMD_RE can consume) --
+                    # skipping isn't safe here, so fall back to \def's
+                    # pre-existing behavior (an ordinary unrecognized macro,
+                    # left as literal text) and let the rest of the line,
+                    # "=" symbols included, print through unaffected.
+                    scanner.pos = save_pos
+                    warn(r"\def<symbol>{...} target is not a nameable command; treating \def as literal text")
+                    emit_text("\\def")
+                    continue
+                scanner.skip_ws()
+                while scanner.pos < scanner.n and scanner.peek() != "{":
+                    scanner.pos += 1
+                scanner.read_braced_arg()
                 continue
 
             if name == "renewcommand":
@@ -694,6 +896,14 @@ def parse_blocks(text, path, warn):
                 emit_text("॰")  # yajur-upakarma.tex's \sep word-separator dot (Devanagari abbreviation sign)
                 continue
 
+            if name == "lbrack":
+                emit_text("[")
+                continue
+
+            if name == "rbrack":
+                emit_text("]")
+                continue
+
             if name == "item":
                 scanner.read_bracket_arg()  # optional custom label, e.g. \item[a.] -- unused in this corpus
                 emit_text("\n")  # starts each item on its own line, like a forced line break
@@ -716,7 +926,7 @@ def parse_blocks(text, path, warn):
                 # is a reasonable fallback, and leaves the next token alone.
                 scanner.skip_ws()
                 deva_name = scanner.read_braced_arg() if scanner.peek() == "{" else ""
-                scanner.splice(KSHAMA_TEMPLATE % clean_line_text(deva_name))
+                scanner.splice(KSHAMA_TEMPLATE % clean_line_text(deva_name, text_macros))
                 continue
 
             if name in SPLICE_MACROS:
@@ -770,7 +980,7 @@ def parse_blocks(text, path, warn):
                     elif envname in TABLE_ENVIRONMENTS:
                         tbl = table_stack.pop()
                         if tbl["cell_buf"] or tbl["current_row"]:
-                            tbl["current_row"].append(clean_line_text("".join(tbl["cell_buf"])))
+                            tbl["current_row"].append(clean_line_text("".join(tbl["cell_buf"]), text_macros))
                             tbl["rows"].append(tbl["current_row"])
                         flush()
                         blocks.append({"type": "table", "rows": tbl["rows"]})
@@ -788,7 +998,7 @@ def parse_blocks(text, path, warn):
                 (title,) = (scanner.read_braced_arg(),)
                 flush()
                 counter.reset()
-                blocks.append({"type": "heading", "macro": name, "text": clean_line_text(title), "resets_counter": True})
+                blocks.append({"type": "heading", "macro": name, "text": clean_line_text(title, text_macros), "resets_counter": True})
                 continue
 
             # adhyatmaramayanam-specific: \iti{kanda}{sarga}/\itibala{kanda}{sarga}
@@ -801,8 +1011,8 @@ def parse_blocks(text, path, warn):
             # marginal value. The colophon text itself matches preamble.tex's
             # own template verbatim.
             if name in ("iti", "itibala"):
-                kanda = clean_line_text(scanner.read_braced_arg())
-                sarga = clean_line_text(scanner.read_braced_arg())
+                kanda = clean_line_text(scanner.read_braced_arg(), text_macros)
+                sarga = clean_line_text(scanner.read_braced_arg(), text_macros)
                 flush()
                 colophon = f"॥इति श्रीमदध्यात्मरामायणे उमामहेश्वरसंवादे {kanda} {sarga} सर्गः॥"
                 blocks.append({"type": "pushpika", "text": colophon})
@@ -810,7 +1020,7 @@ def parse_blocks(text, path, warn):
                 continue
 
             if name == "itikanda":
-                colophon = clean_line_text(scanner.read_braced_arg())
+                colophon = clean_line_text(scanner.read_braced_arg(), text_macros)
                 flush()
                 blocks.append({"type": "pushpika", "text": colophon})
                 blocks.append({"type": "decoration", "style": "closesection"})
@@ -819,27 +1029,48 @@ def parse_blocks(text, path, warn):
             if name == "dnsub":
                 (label,) = (scanner.read_braced_arg(),)
                 flush()
-                blocks.append({"type": "subheading", "macro": "dnsub", "text": clean_line_text(label)})
+                blocks.append({"type": "subheading", "macro": "dnsub", "text": clean_line_text(label, text_macros)})
                 continue
 
             if name == "uvacha":
                 (speaker,) = (scanner.read_braced_arg(),)
                 flush()
-                blocks.append({"type": "uvacha", "text": clean_line_text(speaker)})
+                blocks.append({"type": "uvacha", "text": clean_line_text(speaker, text_macros)})
                 continue
 
             if name == "ifbool":
-                # \ifbool{name}{true-branch}{false-branch} (etoolbox). Used
-                # in puja-vidhanam as \ifbool{katha}{\input{kathas/...}}{} to
-                # conditionally pull in a katha narrative -- kathas/ is out
-                # of scope for this converter, so the boolean is always
-                # effectively false here; drop the whole construct rather
-                # than leak "\ifbool{katha}..." as literal text (both
-                # branches are read as raw text, not re-scanned for macros,
-                # since they're never rendered either way).
-                scanner.read_braced_arg()
-                scanner.read_braced_arg()
-                scanner.read_braced_arg()
+                # \ifbool{name}{true-branch}{false-branch} (etoolbox). Each
+                # boolean's resolution is a corpus-editorial choice, not a
+                # real \ifbool{} evaluation (this converter has no flag
+                # state):
+                #   "katha" -> true-branch: puja-vidhanam wraps its katha
+                #     \input{}s this way, and those should render as
+                #     sub-sections of the puja that references them.
+                #   "individual" -> true-branch: same shape as "katha" --
+                #     gates a per-mahatmya \input{} + itemize listing (e.g.
+                #     ekadashi-purusha-sukta-vidhana-puja.tex's Padma-Puranam
+                #     and Vrata-Raja Ekadashi mahatmya kathas), with an empty
+                #     false-branch in every occurrence in this corpus.
+                #   "veda" -> false-branch: the "regular" (non-Vedic) edition,
+                #     matching \OM/\OMshri's own pre-resolution elsewhere.
+                #   anything else -> dropped entirely (unknown semantics).
+                # Both branches are raw, unparsed text at this point; splice()
+                # re-injects the chosen one for the main loop to parse
+                # normally (so a spliced \input{} still resolves).
+                bool_name = scanner.read_braced_arg().strip()
+                true_branch = scanner.read_braced_arg()
+                false_branch = scanner.read_braced_arg()
+                if bool_name in ("katha", "individual"):
+                    scanner.splice(true_branch)
+                elif bool_name == "veda":
+                    scanner.splice(false_branch)
+                continue
+
+            if name == "input":
+                rel_path = scanner.read_braced_arg().strip()
+                resolved = resolve_input(rel_path, warn)
+                if resolved is not None:
+                    scanner.splice(resolved)
                 continue
 
             if name in ARITY:
@@ -847,18 +1078,57 @@ def parse_blocks(text, path, warn):
                 if starred and name in NO_STAR_SUPPORT:
                     warn(f"\\{name}* used but macro has no starred form; treating as unstarred")
                     starred = False
-                args = [scanner.read_braced_arg() for _ in range(nargs)]
+
+                def read_verse_arg():
+                    # A verse macro's ending punctuation is synthesized by
+                    # this parser (ENDING_TABLE), never sourced from the raw
+                    # text, so a stray editorial danda/double-danda between/
+                    # before its braced args (e.g. varamahalakshmi-vrata-
+                    # katha.tex's misplaced "।") is a source typo, not real
+                    # argument content -- skip it rather than hard-failing.
+                    # Only this narrow punctuation set is skipped: if the
+                    # next char instead starts a new command (e.g.
+                    # ekadashi-mahatmyam-padma-puranam.tex's several
+                    # \twolineshloka{single line} calls that are simply
+                    # missing their 2nd line before the next \twolineshloka
+                    # begins), that's a missing argument, not stray
+                    # punctuation -- treat it as empty and leave the
+                    # following command untouched for its own dispatch.
+                    scanner.skip_ws()
+                    while scanner.peek() in ("।", "॥"):
+                        warn(f"stray {scanner.peek()!r} before \\{name} argument, skipping")
+                        scanner.pos += 1
+                        scanner.skip_ws()
+                    if scanner.peek() != "{":
+                        warn(f"\\{name} missing an expected argument (found {scanner.peek()!r}); treating as empty")
+                        return ""
+                    return scanner.read_braced_arg()
+
+                args = [read_verse_arg() for _ in range(nargs)]
                 flush()
-                blocks.append(emit_verse_block(name, starred, args, counter))
+                blocks.append(emit_verse_block(name, starred, args, counter, text_macros))
                 continue
 
             if name == "devanumber":
                 arg = scanner.read_braced_arg().strip()
                 try:
-                    n = int(arg)
+                    n = resolve_scalar_arg(arg, counter, named_counters)
                 except ValueError:
                     raise ParseError(path, scanner.line_at(scanner.pos), f"\\devanumber{{{arg}}} -- non-integer argument")
-                prose_buf.append(to_deva(n))
+                emit_text(to_deva(n))
+                continue
+
+            if name == "newcounter":
+                ctr_name = scanner.read_braced_arg().strip()
+                named_counters.setdefault(ctr_name, 0)
+                continue
+
+            if name == "arabic":
+                # Bare \arabic{name} outside \devanumber{} -- print the
+                # counter's current value as a plain (non-Devanagari) number.
+                ctr_name = scanner.read_braced_arg().strip()
+                value = counter.value if ctr_name == "shlokacount" else named_counters.get(ctr_name, 0)
+                emit_text(str(value))
                 continue
 
             if name == "resetShloka":
@@ -877,24 +1147,68 @@ def parse_blocks(text, path, warn):
                 if ctr_name == "shlokacount":
                     counter.step()
                     blocks.append({"type": "counter-adjust", "op": "add", "n": 1})
+                else:
+                    named_counters[ctr_name] = named_counters.get(ctr_name, 0) + 1
                 continue
 
             if name == "addtocounter":
                 arg1 = scanner.read_braced_arg().strip()
                 arg2 = scanner.read_braced_arg().strip()
-                if arg1 != "shlokacount":
-                    raise ParseError(
-                        path,
-                        scanner.line_at(scanner.pos),
-                        f"\\addtocounter{{{arg1}}} -- unexpected counter, only 'shlokacount' is supported",
-                    )
                 try:
-                    n = int(arg2)
+                    n = resolve_scalar_arg(arg2, counter, named_counters)
                 except ValueError:
-                    raise ParseError(path, scanner.line_at(scanner.pos), f"\\addtocounter{{shlokacount}}{{{arg2}}} -- non-integer amount")
+                    raise ParseError(path, scanner.line_at(scanner.pos), f"\\addtocounter{{{arg1}}}{{{arg2}}} -- non-integer amount")
                 flush()
-                counter.add(n)
-                blocks.append({"type": "counter-adjust", "op": "add", "n": n})
+                if arg1 == "shlokacount":
+                    counter.add(n)
+                    blocks.append({"type": "counter-adjust", "op": "add", "n": n})
+                else:
+                    named_counters[arg1] = named_counters.get(arg1, 0) + n
+                continue
+
+            if name == "setcounter":
+                # \setcounter{name}{value} -- sets rather than adds. Seen
+                # for LaTeX-internal counters (page, secnumdepth) with no
+                # web equivalent, and for a real content dependency in
+                # MahaNyasah.tex: \setcounter{shlokacount}{\value{ssk}}
+                # re-syncs the running verse count to a separately-tracked
+                # "ssk" counter before rendering an aligned couplet with
+                # \twolineshloka (so it numbers using ssk's sequence).
+                ctr_name = scanner.read_braced_arg().strip()
+                arg2 = scanner.read_braced_arg().strip()
+                try:
+                    n = resolve_scalar_arg(arg2, counter, named_counters)
+                except ValueError:
+                    raise ParseError(path, scanner.line_at(scanner.pos), f"\\setcounter{{{ctr_name}}}{{{arg2}}} -- non-integer value")
+                flush()
+                if ctr_name == "shlokacount":
+                    counter.value = n
+                    blocks.append({"type": "counter-adjust", "op": "set", "n": n})
+                else:
+                    named_counters[ctr_name] = n
+                continue
+
+            if name == "parbox":
+                # \parbox[pos]{width}{content} -- print box-layout wrapper;
+                # position and width are dropped, content is spliced back
+                # for normal re-parsing (e.g. shankara-prashasti.tex's
+                # \fbox{\parbox[]{0.8\linewidth}{...}} attribution note).
+                scanner.read_bracket_arg()
+                scanner.read_braced_arg()
+                content = scanner.read_braced_arg()
+                scanner.splice(content)
+                continue
+
+            if name == "multicolumn":
+                # \multicolumn{n}{fmt}{content} inside a tabular row (e.g.
+                # purvanga/prana-pratishtha.tex's karanyasa table) -- the
+                # column-span count and alignment aren't modeled by this
+                # converter's plain row/cell table type, so only the cell
+                # content is kept.
+                scanner.read_braced_arg()
+                scanner.read_braced_arg()
+                content = scanner.read_braced_arg()
+                scanner.splice(content)
                 continue
 
             if name in ("closesection", "closesub"):
