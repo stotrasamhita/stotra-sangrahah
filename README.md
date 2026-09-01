@@ -20,11 +20,11 @@ Most stotra texts were originally sourced from [sanskritdocuments.org](http://sa
 
 | Source | Output | Trim size | Notes |
 |---|---|---|---|
-| `shloka.tex` | `shloka.pdf` | 148×210 mm (A5-ish) | Default digital edition |
-| `shloka-print.tex` | `shloka-print.pdf` | 148×210 mm | Same size, with wider gutter margins for physical binding |
-| `shloka-6x9.tex` | `shloka-6x9.pdf` | 6×9 in | US trade paperback trim size |
-| `shloka-kindle.tex` | `shloka-kindle.pdf` | 144×192 mm | Sized for Kindle paperback print-on-demand |
-| `shloka-kindle-scribe.tex` | `shloka-kindle-scribe.pdf` | 192×254 mm, 2 columns | Larger page for the Kindle Scribe's screen |
+| `shloka.tex` | [`shloka.pdf`](https://github.com/stotrasamhita/stotra-sangrahah/blob/master/shloka.pdf) | 148×210 mm (A5-ish) | Default digital edition |
+| `shloka-print.tex` | [`shloka-print.pdf`](https://github.com/stotrasamhita/stotra-sangrahah/blob/master/shloka-print.pdf) | 148×210 mm | Same size, with wider gutter margins for physical binding |
+| `shloka-6x9.tex` | [`shloka-6x9.pdf`](https://github.com/stotrasamhita/stotra-sangrahah/blob/master/shloka-6x9.pdf) | 6×9 in | US trade paperback trim size |
+| `shloka-kindle.tex` | [`shloka-kindle.pdf`](https://github.com/stotrasamhita/stotra-sangrahah/blob/master/shloka-kindle.pdf) | 144×192 mm | Sized for Kindle paperback print-on-demand |
+| `shloka-kindle-scribe.tex` | [`shloka-kindle-scribe.pdf`](https://github.com/stotrasamhita/stotra-sangrahah/blob/master/shloka-kindle-scribe.pdf) | 192×254 mm, 2 columns | Larger page for the Kindle Scribe's screen |
 
 Each variant sets a couple of `etoolbox` booleans (`kindle`, `print`) and a page geometry, then defers everything else — headers, fonts, section styling — to the shared `preamble.tex`. The various `shloka-*coverpage*.pdf`/`.svg` files and `ShriRama.jpg` are cover art for the print/Kindle editions.
 
