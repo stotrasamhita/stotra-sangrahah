@@ -76,6 +76,26 @@ Typesetting relies heavily on XeLaTeX and the Sanskrit 2003 font, with LaTeX mac
 
 The compiled book is offered for personal use and study. Please see the colophon in `frontmatter.tex` for the project's stated terms ("For Personal Use Only — Not For Commercial Printing/Distribution").
 
+## 📑 Index
+
+**Jump to:** [What's here](#whats-here) · [Format variants](#the-full-book-format-variants) · [Thematic compilations](#thematic-compilations) · [Shared build assets](#shared-build-assets) · [Building](#building) · [History and acknowledgements](#history-and-acknowledgements) · [Usage](#usage)
+
+**All release PDFs:**
+
+| Edition | PDF |
+|---|---|
+| Default digital | [📄 shloka.pdf](https://github.com/stotrasamhita/stotra-sangrahah/blob/master/shloka.pdf) |
+| Print | [📄 shloka-print.pdf](https://github.com/stotrasamhita/stotra-sangrahah/blob/master/shloka-print.pdf) |
+| 6×9in trade paperback | [📄 shloka-6x9.pdf](https://github.com/stotrasamhita/stotra-sangrahah/blob/master/shloka-6x9.pdf) |
+| Kindle | [📄 shloka-kindle.pdf](https://github.com/stotrasamhita/stotra-sangrahah/blob/master/shloka-kindle.pdf) |
+| Kindle Scribe | [📄 shloka-kindle-scribe.pdf](https://github.com/stotrasamhita/stotra-sangrahah/blob/master/shloka-kindle-scribe.pdf) |
+
+Thematic booklets, each with its own compiled PDFs: [compilations/](compilations/README.md#pdf-index) (9 booklets, 38 PDFs)
+
+Every individual stotra as its own PDF, by deity: [stotras-pdf/](stotras-pdf/README.md) (A5/print) · [stotras-kindle-pdf/](stotras-kindle-pdf/README.md) (Kindle) · [stotras-kindle-scribe-pdf/](stotras-kindle-scribe-pdf/README.md) (Kindle Scribe) — ~275 stotras each
+
+**Read it online, in multiple scripts:** [stotrasamhita.github.io/stotras](https://stotrasamhita.github.io/stotras/) — the web edition renders the text with a live Devanāgarī/Tamil/Telugu/Kannada/Malayalam/IAST script switcher. Currently a pilot covering the Hanuman and Dhyanam categories; the rest of the corpus will be added as the full-corpus build is finished.
+
 ---
 
 *The README.md files on this repo were generated and beautified with Claude.*
