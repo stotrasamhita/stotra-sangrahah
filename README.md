@@ -75,3 +75,7 @@ Typesetting relies heavily on XeLaTeX and the Sanskrit 2003 font, with LaTeX mac
 ## Usage
 
 The compiled book is offered for personal use and study. Please see the colophon in `frontmatter.tex` for the project's stated terms ("For Personal Use Only — Not For Commercial Printing/Distribution").
+
+---
+
+*The README.md files on this repo were generated and beautified with Claude.*

@@ -23,3 +23,7 @@ Like the root book, several of these booklets are built in more than one page-si
 `rebuildPDFs.bat` at this level is a Windows batch script that rebuilds a subset of these booklets (currently `stotramanjari`'s several parts and `nityaparayanam`'s editions) by `cd`-ing into each folder and running `latexmk -xelatex <target>` there, logging to `rebuild.log`. It's a convenience script covering the booklets that are rebuilt most often, not an exhaustive build-everything target — to build any individual booklet (including ones not listed in the script), `cd` into its folder and run `latexmk -xelatex <name>.tex` (or the XeLaTeX toolchain described in the root README) directly.
 
 `shloka-book-v3.pdf` at this level is a previously compiled snapshot of the full book, kept here from an earlier stage of the project; the current full-book builds live at the repository root (`shloka*.pdf`).
+
+---
+
+*The README.md files on this repo were generated and beautified with Claude.*

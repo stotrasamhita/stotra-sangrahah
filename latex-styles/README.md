@@ -7,3 +7,7 @@ Shared LaTeX packages and reference material used across the stotra books. (Note
 - **`stotrasamhita.sty`** — a page/document style (17pt base size, custom margins, a purple-on-cream colour scheme, and per-script font commands for Devanagari/Tamil/Telugu/Kannada/Grantha/Malayalam) used for StotraSamhita-branded documents.
 - **`NerurA5.sty`** — the same style adapted for A5-format documents associated with Nerur Shankara Matham; nearly identical to `stotrasamhita.sty` but with its own colour palette and page geometry.
 - **`granthamizh-table-only.pdf`** — a reference table of the Grantha/Tamil script mapping, not a style file; useful when checking or extending the multi-script font handling above.
+
+---
+
+*The README.md files on this repo were generated and beautified with Claude.*

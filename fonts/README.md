@@ -13,3 +13,7 @@ Font files bundled for the multi-script typesetting used by `latex-styles/shloka
 | `GenBasR.ttf`, `GenBasI.ttf` | Gentium Basic (Regular/Italic) — a Latin font used for IAST transliteration of Sanskrit into the Roman alphabet. |
 
 To build any document that uses these (via the `dng`/`grantha`/`tamil`/`telugu`/`kannada`/`malayalam`/`iast` options of `shloka-multilang.sty`, or the per-script font commands in `stotrasamhita.sty`/`NerurA5.sty`), make sure this folder's fonts — plus Sanskrit 2003 itself — are installed and discoverable by XeLaTeX (e.g. via your OS font directory, or a local `TEXMFHOME`/font-path configuration pointing at this folder).
+
+---
+
+*The README.md files on this repo were generated and beautified with Claude.*
