@@ -359,6 +359,12 @@ INLINE_STRIP_RE = re.compile(r"\\hspace\{[^{}]*\}|\\mbox\{\}|\\nobreak\b|\\footn
 # here rather than relying on the main scanner's UNWRAP_ONE_ARG dispatch,
 # which only ever sees body text, never a captured argument string.
 INLINE_UNWRAP_RE = re.compile(r"\\(?:textbf|textsf|textit|emph|centerline|textsuperscript)\{([^{}]*)\}")
+# SkandaShashthiKavacham.tex's \sect{\fontspec{Arial Unicode MS}{content}} --
+# this file's own convention for switching to a Tamil-capable font around a
+# span of text, used here (unlike the main dispatch's \fontspec, which only
+# ever sees the font-name argument, e.g. \fontspec[Script=Devanagari]{Siddhanta}
+# with no second argument) inside a captured \sect{} title.
+INLINE_FONTSPEC_RE = re.compile(r"\\fontspec\{[^{}]*\}\{([^{}]*)\}")
 # \blank similarly appears mid-verse (nrisimha-jayanti-puja.tex's sankalpa
 # line) as well as inside \renewcommand bodies that themselves get spliced
 # (where it's handled by the main dispatch instead) -- this covers the
@@ -567,6 +573,7 @@ def clean_line_text(s, text_macros=None):
             # literal "\1") the way a raw replacement string would be.
             s = re.sub(r"\\" + re.escape(name) + r"\b(\{\})?", lambda m, v=value: v, s)
     s = INLINE_STRIP_RE.sub("", s)
+    s = INLINE_FONTSPEC_RE.sub(r"\1", s)
     while True:
         s2 = INLINE_UNWRAP_RE.sub(r"\1", s)
         if s2 == s:

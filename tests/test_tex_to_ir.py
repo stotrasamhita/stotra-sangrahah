@@ -26,6 +26,11 @@ class TestCleanLineText(unittest.TestCase):
         # which never sees a captured argument string.
         self.assertEqual(clean_line_text(r"प्रथमोऽध्यायः\textsf{---}अर्जुनविषादयोगः"), "प्रथमोऽध्यायः---अर्जुनविषादयोगः")
 
+    def test_unwraps_fontspec_content_inside_a_title(self):
+        # SkandaShashthiKavacham.tex: \sect{\fontspec{Arial Unicode MS}{...}}
+        # -- the font-name argument is dropped, the Tamil content kept.
+        self.assertEqual(clean_line_text(r"\fontspec{Arial Unicode MS}{கவசம்}"), "கவசம்")
+
 
 class TestBraceBalancing(unittest.TestCase):
     def test_nested_braces_captured_verbatim(self):
