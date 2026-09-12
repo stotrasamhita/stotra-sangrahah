@@ -604,18 +604,34 @@ def expand_macro_invocations(text, path, name, n, body):
         text = text[: m.start()] + expanded + text[scanner.pos :]
 
 
-def expand_local_macros(text, path):
+def expand_local_macros(text, path, inherited=None):
     """Pre-scan for \\newcommand{\\foo}{body} (optionally \\newcommand{\\foo}[N]{body})
     near the top of the file and splice `body` in for every later \\foo --
     handles file-local macros like NamaRamayanam.tex's \\jaya (0-arg) and
     mahabharatam's virāṭaparva.tex's \\onelineindentedshloka (2-arg)
     generically, not as hardcoded cases. The xparse-style optional-default
     form (\\newcommand{\\foo}[N][default]{body}, vedamantra-book's
-    \\anuvakamend) is out of scope -- skipped rather than mis-expanded."""
+    \\anuvakamend) is out of scope -- skipped rather than mis-expanded.
+
+    `inherited` is an optional {name: (n, body)} table of macros already
+    known from an INCLUDING document's own \\newcommand{}s -- vedamantra-
+    book's ArunaPrashnah.tex/NavagrahaSuktam.tex are written as templates
+    that invoke \\ip/\\prashnaend expecting whichever file \\input{}s them
+    to supply the definition (surya-namaskara.tex does, right before its
+    own \\input{../vedamantra-book/...}). Applied after this file's own
+    local \\newcommand{}s, so a name this file defines itself still wins
+    over one of the same name inherited from its includer. See
+    resolve_input(), which passes the includer's table through here.
+
+    Returns (expanded_text, macros), where `macros` is this file's OWN
+    newly-discovered table (never includes `inherited` itself) -- for a
+    further caller to pass down in turn if this file's spliced-in content
+    goes on to \\input{} something else itself."""
+    macros = {}
     while True:
         m = NEWCOMMAND_RE.search(text)
         if not m:
-            return text
+            break
         name = m.group(1)
         scanner = TexScanner(text, path)
         scanner.pos = m.end()
@@ -633,13 +649,22 @@ def expand_local_macros(text, path):
         text = text[: m.start()] + text[scanner.pos :]
         if skip:
             continue
+        macros[name] = (n, body)
         if n == 0:
             text = re.sub(r"\\" + re.escape(name) + r"\b", lambda _match: body, text)
         else:
             text = expand_macro_invocations(text, path, name, n, body)
+    for name, (n, body) in (inherited or {}).items():
+        if name in macros:
+            continue
+        if n == 0:
+            text = re.sub(r"\\" + re.escape(name) + r"\b", lambda _match: body, text)
+        else:
+            text = expand_macro_invocations(text, path, name, n, body)
+    return text, macros
 
 
-def resolve_input(rel_path, warn):
+def resolve_input(rel_path, warn, inherited=None):
     """Reads and preprocesses a \\input{path} target for splicing inline.
     Two shapes resolve, both relative to the current working directory
     (which callers set to the repo root being processed, matching how e.g.
@@ -662,7 +687,15 @@ def resolve_input(rel_path, warn):
     resolve -- this converter processes known sibling repos one level up,
     nothing further out. Returns None (leaving the \\input{} silently
     dropped, as before) if the path doesn't qualify, doesn't exist, or
-    can't be read as UTF-8."""
+    can't be read as UTF-8.
+
+    `inherited`: the including document's own local-macro table (see
+    expand_local_macros()), applied to the target's text alongside its own
+    -- covers vedamantra-book's "template" files (ArunaPrashnah.tex,
+    NavagrahaSuktam.tex) that invoke macros like \\ip/\\prashnaend which are
+    never defined in vedamantra-book itself, only by whichever file
+    \\input{}s them (surya-namaskara.tex defines them locally right before
+    its own \\input{../vedamantra-book/...})."""
     if rel_path.startswith("/"):
         return None
     parts = rel_path.split("/")
@@ -680,7 +713,8 @@ def resolve_input(rel_path, warn):
         warn(f"\\input{{{rel_path}}}: {candidate} is not valid UTF-8, left unresolved")
         return None
     body, _ = strip_comments_and_extract_meta(text)
-    return expand_local_macros(body, str(candidate))
+    expanded, _ = expand_local_macros(body, str(candidate), inherited=inherited)
+    return expanded
 
 
 def _prose_block(lines):
@@ -770,7 +804,7 @@ def resolve_scalar_arg(arg, counter, named_counters):
     return int(arg)
 
 
-def parse_blocks(text, path, warn):
+def parse_blocks(text, path, warn, inherited=None):
     scanner = TexScanner(text, path)
     counter = CounterModel()
     blocks = []
@@ -1093,7 +1127,7 @@ def parse_blocks(text, path, warn):
 
             if name == "input":
                 rel_path = scanner.read_braced_arg().strip()
-                resolved = resolve_input(rel_path, warn)
+                resolved = resolve_input(rel_path, warn, inherited=inherited)
                 if resolved is not None:
                     scanner.splice(resolved)
                 continue
@@ -1362,8 +1396,8 @@ def process_file(path):
 
     text = path.read_text(encoding="utf-8")
     body, meta = strip_comments_and_extract_meta(text)
-    body = expand_local_macros(body, str(path))
-    blocks = parse_blocks(body, str(path), warn)
+    body, macros = expand_local_macros(body, str(path))
+    blocks = parse_blocks(body, str(path), warn, inherited=macros)
     return build_ir(path, blocks, meta), warnings
 
 

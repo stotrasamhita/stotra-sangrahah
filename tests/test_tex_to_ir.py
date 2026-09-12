@@ -152,7 +152,7 @@ class TestLocalMacroExpansion(unittest.TestCase):
 \jaya
 """
         body, _ = strip_comments_and_extract_meta(text)
-        body = expand_local_macros(body, "t")
+        body, _ = expand_local_macros(body, "t")
         self.assertNotIn(r"\jaya", body)
         blocks = parse_blocks(body, "t", lambda msg: None)
         types = [b["type"] for b in blocks]
@@ -172,7 +172,7 @@ class TestLocalMacroExpansion(unittest.TestCase):
             + r"\onelineindentedshloka{B1}{B2}" + "\n"
         )
         body, _ = strip_comments_and_extract_meta(text)
-        body = expand_local_macros(body, "t")
+        body, _ = expand_local_macros(body, "t")
         self.assertNotIn("onelineindentedshloka", body)
         blocks = parse_blocks(body, "t", lambda msg: None)
         prose_texts = [b["text"] for b in blocks if b["type"] == "prose"]
@@ -186,8 +186,42 @@ class TestLocalMacroExpansion(unittest.TestCase):
         # bracket); left unexpanded rather than corrupted.
         text = r"\newcommand{\foo}[1][]{ignored #1}" + "\n" + r"\sect{t}" + "\n" + r"\foo{X}" + "\n"
         body, _ = strip_comments_and_extract_meta(text)
-        body = expand_local_macros(body, "t")
+        body, _ = expand_local_macros(body, "t")
         self.assertIn(r"\foo", body)
+
+    def test_including_files_local_macro_reaches_into_spliced_input(self):
+        # vedamantra-book's ArunaPrashnah.tex is a "template" file that
+        # invokes \ip/\prashnaend without ever defining them itself --
+        # surya-namaskara.tex defines them locally right before its own
+        # \input{../vedamantra-book/aranyakas/ArunaPrashnah.tex}, matching
+        # real LaTeX include-time macro scoping. process_file()'s top-level
+        # expand_local_macros() call must hand that table down through
+        # parse_blocks() to resolve_input() so the spliced-in text expands
+        # too, not just the includer's own.
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "surya-namaskara-repo").mkdir()
+            (Path(tmp) / "vedamantra-book" / "aranyakas").mkdir(parents=True)
+            (Path(tmp) / "vedamantra-book" / "aranyakas" / "ArunaPrashnah.tex").write_text(
+                r"\ip" + "\n" + r"\prashnaend{A}{B}" + "\n", encoding="utf-8"
+            )
+            cwd = os.getcwd()
+            os.chdir(Path(tmp) / "surya-namaskara-repo")
+            try:
+                text = (
+                    r"\newcommand{\ip}{\dnsub{X}}" + "\n"
+                    + r"\newcommand{\prashnaend}[2]{\dnsub{#1-#2}}" + "\n"
+                    + r"\sect{t}" + "\n"
+                    + r"\input{../vedamantra-book/aranyakas/ArunaPrashnah.tex}" + "\n"
+                )
+                body, meta = strip_comments_and_extract_meta(text)
+                body, macros = expand_local_macros(body, "t")
+                blocks = parse_blocks(body, "t", lambda msg: None, inherited=macros)
+            finally:
+                os.chdir(cwd)
+        self.assertEqual(
+            [(b["type"], b["text"]) for b in blocks],
+            [("heading", "t"), ("subheading", "X"), ("subheading", "A-B")],
+        )
 
 
 class TestLetAliasing(unittest.TestCase):
