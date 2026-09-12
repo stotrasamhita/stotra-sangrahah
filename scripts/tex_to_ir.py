@@ -640,18 +640,36 @@ def expand_local_macros(text, path):
 
 
 def resolve_input(rel_path, warn):
-    """Reads and preprocesses a \\input{path} target for splicing inline, if
-    it's a same-repo reference this corpus's own conventions make safely
-    resolvable: always relative to the repo root (matching how e.g.
+    """Reads and preprocesses a \\input{path} target for splicing inline.
+    Two shapes resolve, both relative to the current working directory
+    (which callers set to the repo root being processed, matching how e.g.
     pujas.tex itself -- at the repo root -- writes \\input{pujas/foo}, and
     shivaratri-puja.tex -- itself inside pujas/ -- writes the same
-    pujas/-prefixed form, not a path relative to its own directory), never
-    a "../" cross-repo reference (puja-vidhanam pulling in namavali-manjari/
-    stotra-sangrahah files this way is real, but resolving another repo's
-    files is out of scope here -- this converter processes one repo's files
-    per run). Returns None (leaving the \\input silently dropped, as before)
-    if the path is cross-repo, doesn't exist, or can't be read as UTF-8."""
-    if rel_path.startswith("../") or rel_path.startswith("/"):
+    pujas/-prefixed form, not a path relative to its own directory):
+      - a same-repo path (no "..");
+      - a one-level-up cross-repo path into a sibling checkout, e.g.
+        puja-vidhanam's \\input{../namavali-manjari/100/Ganapati_108.tex} or
+        \\input{../stotra-sangrahah/stotras/ganesha/GaneshaBhujangam.tex} --
+        genuinely widespread in this corpus (~60 references across ~30
+        files, pulling in a deity's namavali/stotra alongside its puja),
+        and resolvable exactly like a same-repo \\input{} as long as that
+        sibling is checked out next to the repo being processed (true for
+        every actual run: the site's automated sync clones every corpus as
+        siblings under one shared directory for exactly this reason).
+    A path with more than one leading ".." (escaping the shared parent
+    directory entirely, not just into a sibling), a ".." anywhere other
+    than as a leading component, or a leading "/" (absolute) does not
+    resolve -- this converter processes known sibling repos one level up,
+    nothing further out. Returns None (leaving the \\input{} silently
+    dropped, as before) if the path doesn't qualify, doesn't exist, or
+    can't be read as UTF-8."""
+    if rel_path.startswith("/"):
+        return None
+    parts = rel_path.split("/")
+    leading_dotdot = 0
+    while leading_dotdot < len(parts) and parts[leading_dotdot] == "..":
+        leading_dotdot += 1
+    if leading_dotdot > 1 or ".." in parts[leading_dotdot:]:
         return None
     candidate = Path(rel_path if rel_path.endswith(".tex") else rel_path + ".tex")
     if not candidate.is_file():

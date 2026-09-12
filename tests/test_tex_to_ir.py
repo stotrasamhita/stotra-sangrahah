@@ -306,9 +306,61 @@ before \input{purvanga/ghanta-puja.tex} after
         prose = next(b for b in blocks if b["type"] == "prose")
         self.assertEqual(prose["text"], "before after")
 
-    def test_cross_repo_input_left_unresolved(self):
-        text = r"before \input{../namavali-manjari/100/Ganga_108.tex} after"
-        blocks = parse_blocks(text, "t", lambda msg: None)
+    def test_cross_repo_input_resolves_when_sibling_exists(self):
+        # puja-vidhanam's own convention, e.g. siddhivinayaka-puja.tex's
+        # \input{../namavali-manjari/100/Ganapati_108.tex}: a one-level-up
+        # reference into a sibling repo checkout, genuinely widespread
+        # across ~30 puja-vidhanam files (namavalis and stotras alike) --
+        # this must resolve and splice for real parsing, not be dropped.
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "puja-vidhanam" / "pujas").mkdir(parents=True)
+            (Path(tmp) / "namavali-manjari" / "100").mkdir(parents=True)
+            (Path(tmp) / "namavali-manjari" / "100" / "Ganga_108.tex").write_text(
+                r"\dnsub{गङ्गाष्टोत्तरशतनामावलिः}" + "\n", encoding="utf-8"
+            )
+            cwd = os.getcwd()
+            os.chdir(Path(tmp) / "puja-vidhanam")
+            try:
+                text = r"\sect{t}" + "\n" + r"\input{../namavali-manjari/100/Ganga_108.tex}" + "\n"
+                blocks = parse_blocks(text, "t", lambda msg: None)
+            finally:
+                os.chdir(cwd)
+        self.assertEqual(
+            [(b["type"], b["text"]) for b in blocks],
+            [("heading", "t"), ("subheading", "गङ्गाष्टोत्तरशतनामावलिः")],
+        )
+
+    def test_cross_repo_input_missing_sibling_dropped(self):
+        # Same shape as above, but the sibling isn't actually checked out
+        # (or the target file doesn't exist within it) -- left unresolved,
+        # same as any other missing \input{} target, not an error.
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = os.getcwd()
+            os.chdir(tmp)
+            try:
+                text = r"before \input{../namavali-manjari/100/Ganga_108.tex} after"
+                blocks = parse_blocks(text, "t", lambda msg: None)
+            finally:
+                os.chdir(cwd)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["text"], "before after")
+
+    def test_two_levels_up_input_left_unresolved(self):
+        # Only a *sibling* repo (exactly one "..") is in scope; anything
+        # escaping further out is never resolved, target present or not --
+        # this converter has no business reading further up the tree than
+        # the shared parent directory every sibling repo is cloned into.
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "somewhere-else").mkdir()
+            (Path(tmp) / "somewhere-else" / "file.tex").write_text(r"\dnsub{x}", encoding="utf-8")
+            (Path(tmp) / "parent" / "repo").mkdir(parents=True)
+            cwd = os.getcwd()
+            os.chdir(Path(tmp) / "parent" / "repo")
+            try:
+                text = r"before \input{../../somewhere-else/file.tex} after"
+                blocks = parse_blocks(text, "t", lambda msg: None)
+            finally:
+                os.chdir(cwd)
         prose = next(b for b in blocks if b["type"] == "prose")
         self.assertEqual(prose["text"], "before after")
 
