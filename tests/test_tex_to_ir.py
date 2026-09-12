@@ -522,6 +522,15 @@ class TestBlankSeeKshama(unittest.TestCase):
         prose = next(b for b in blocks if b["type"] == "prose")
         self.assertIn("( )", prose["lines"][0])
 
+    def test_blank_with_empty_braces_inside_captured_argument_leaves_no_stray_braces(self):
+        # clean_line_text() runs on a raw captured substring (e.g. a
+        # \pujainfobox field, see TestPujainfoboxAndInstruct below) with no
+        # second pass through the main scanner's own brace-group handling
+        # -- \blank{}'s trailing {} must be consumed by the regex itself or
+        # it's left behind as literal "{}" text.
+        self.assertEqual(clean_line_text(r"\blank{} अस्मिन्"), "( ) अस्मिन्")
+        self.assertEqual(clean_line_text(r"\blank अस्मिन्"), "( ) अस्मिन्")
+
     def test_math_mode_circ_word_separator(self):
         # yajur-upakarma.tex's \sep macro expands (via expand_local_macros)
         # to \hspace{...}{\small$\circ$}\hspace{...} -- $ has no real math
@@ -550,6 +559,51 @@ class TestBlankSeeKshama(unittest.TestCase):
         # normally rather than swallowing it as the argument.
         blocks = parse_blocks(r"\kshama" + "\n" + r"\closesub", "t", lambda msg: None)
         self.assertIn("decoration", [b["type"] for b in blocks])
+
+
+class TestPujainfoboxAndInstruct(unittest.TestCase):
+    def test_pujainfobox_all_seven_args_captured_image_dropped(self):
+        # preamble.tex's \pujainfobox{title}{image}{tithi}{date-this-year}
+        # {date-next-year}{katha}{mulam} -- yajur-upakarma.tex's real usage
+        # passes image/katha/mulam as {} (all mandatory positionally, but
+        # these three may be empty).
+        text = (
+            r"\pujainfobox{यजुर्वेद-उपाकर्म}{}{श्रावण-पौर्णमासी}{\blank{}}{\blank{}}{}{}"
+            + "\n" + r"\sect{t}"
+        )
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        info = blocks[0]
+        self.assertEqual(info["type"], "infobox")
+        self.assertEqual(info["title"], "यजुर्वेद-उपाकर्म")
+        self.assertEqual(info["tithi"], "श्रावण-पौर्णमासी")
+        self.assertEqual(info["date_this_year"], "( )")
+        self.assertEqual(info["date_next_year"], "( )")
+        self.assertEqual(info["katha"], "")
+        self.assertEqual(info["mulam"], "")
+
+    def test_pujainfobox_katha_and_mulam_kept_when_present(self):
+        text = r"\pujainfobox{title}{}{tithi}{}{}{पुराण-कथा}{स्कन्दपुराणम्}"
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        info = blocks[0]
+        self.assertEqual(info["katha"], "पुराण-कथा")
+        self.assertEqual(info["mulam"], "स्कन्दपुराणम्")
+
+    def test_instruct_all_three_languages(self):
+        text = r"\instruct{संस्कृतम्}{English text}{தமிழ்}"
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        instr = blocks[0]
+        self.assertEqual(instr["type"], "instruction")
+        self.assertEqual(instr["sanskrit"], "संस्कृतम्")
+        self.assertEqual(instr["english"], "English text")
+        self.assertEqual(instr["tamil"], "தமிழ்")
+
+    def test_instruct_english_and_tamil_omitted(self):
+        text = r"\instruct{संस्कृतम्}{}{}"
+        blocks = parse_blocks(text, "t", lambda msg: None)
+        instr = blocks[0]
+        self.assertEqual(instr["sanskrit"], "संस्कृतम्")
+        self.assertEqual(instr["english"], "")
+        self.assertEqual(instr["tamil"], "")
 
 
 class TestSpliceMacros(unittest.TestCase):

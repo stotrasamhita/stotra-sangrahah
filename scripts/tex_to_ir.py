@@ -389,8 +389,14 @@ INLINE_FONTSPEC_RE = re.compile(r"\\fontspec\{[^{}]*\}\{([^{}]*)\}")
 # \blank similarly appears mid-verse (nrisimha-jayanti-puja.tex's sankalpa
 # line) as well as inside \renewcommand bodies that themselves get spliced
 # (where it's handled by the main dispatch instead) -- this covers the
-# raw-argument case.
-INLINE_BLANK_RE = re.compile(r"\\blank\b")
+# raw-argument case. Corpus usage is a mix of bare \blank and \blank{}
+# (e.g. preamble.tex's \pujainfobox invocations always pass date fields as
+# \blank{}) -- the optional trailing {} must be consumed here too, or it's
+# left behind as literal "{}" text (the main dispatch's own \blank handling
+# doesn't have this problem: it only emits the placeholder and lets the
+# scanner's normal brace-group handling consume {} transparently on the
+# next loop iteration; this regex has no such second pass).
+INLINE_BLANK_RE = re.compile(r"\\blank\b(\{\})?")
 
 
 class ParseError(Exception):
@@ -1131,6 +1137,43 @@ def parse_blocks(text, path, warn, inherited=None):
                 (speaker,) = (scanner.read_braced_arg(),)
                 flush()
                 blocks.append({"type": "uvacha", "text": clean_line_text(speaker, text_macros)})
+                continue
+
+            if name == "pujainfobox":
+                # preamble.tex's \pujainfobox{title}{image}{tithi}{date-
+                # this-year}{date-next-year}{katha}{mulam} -- a Wikipedia-
+                # style summary panel, positionally mandatory but #2/#6/#7
+                # may be passed as {} to omit that part. #2 (image path) is
+                # dropped like \includegraphics elsewhere -- this converter
+                # has no image pipeline.
+                title = clean_line_text(scanner.read_braced_arg(), text_macros)
+                scanner.read_braced_arg()  # image -- no image pipeline
+                tithi = clean_line_text(scanner.read_braced_arg(), text_macros)
+                date_this_year = clean_line_text(scanner.read_braced_arg(), text_macros)
+                date_next_year = clean_line_text(scanner.read_braced_arg(), text_macros)
+                katha = clean_line_text(scanner.read_braced_arg(), text_macros)
+                mulam = clean_line_text(scanner.read_braced_arg(), text_macros)
+                flush()
+                blocks.append({
+                    "type": "infobox",
+                    "title": title,
+                    "tithi": tithi,
+                    "date_this_year": date_this_year,
+                    "date_next_year": date_next_year,
+                    "katha": katha,
+                    "mulam": mulam,
+                })
+                continue
+
+            if name == "instruct":
+                # preamble.tex's \instruct{sanskrit}{english}{tamil} -- a
+                # procedural stage-direction in up to three languages;
+                # #2/#3 may be passed as {} if not yet translated.
+                sanskrit = clean_line_text(scanner.read_braced_arg(), text_macros)
+                english = clean_line_text(scanner.read_braced_arg(), text_macros)
+                tamil = clean_line_text(scanner.read_braced_arg(), text_macros)
+                flush()
+                blocks.append({"type": "instruction", "sanskrit": sanskrit, "english": english, "tamil": tamil})
                 continue
 
             if name == "ifbool":

@@ -391,6 +391,42 @@ class TestHtmlRendering(unittest.TestCase):
         self.assertIn("<td>a</td><td>b &amp; c</td>", out)
         self.assertIn('class="stotra-table"', out)
 
+    def test_infobox_omits_empty_katha_and_mulam_rows(self):
+        block = {
+            "type": "infobox", "title": "यजुर्वेद-उपाकर्म", "tithi": "श्रावण-पौर्णमासी",
+            "date_this_year": "( )", "date_next_year": "( )", "katha": "", "mulam": "",
+        }
+        out = render_block(block)
+        self.assertIn('class="infobox-title"', out)
+        self.assertIn("यजुर्वेद-उपाकर्म", out)
+        self.assertEqual(out.count("<tr>"), 3)
+        self.assertNotIn("कथा", out)
+        self.assertNotIn("मूलम्", out)
+
+    def test_infobox_includes_katha_and_mulam_rows_when_present(self):
+        block = {
+            "type": "infobox", "title": "t", "tithi": "t", "date_this_year": "t", "date_next_year": "t",
+            "katha": "पुराण-कथा", "mulam": "स्कन्दपुराणम्",
+        }
+        out = render_block(block)
+        self.assertEqual(out.count("<tr>"), 5)
+        self.assertIn("पुराण-कथा", out)
+        self.assertIn("स्कन्दपुराणम्", out)
+
+    def test_instruction_all_languages_shown(self):
+        block = {"type": "instruction", "sanskrit": "स", "english": "e", "tamil": "த"}
+        out = render_block(block)
+        self.assertIn('class="instruction"', out)
+        self.assertIn('class="instruction-sanskrit"', out)
+        self.assertIn("स", out)
+        self.assertIn("e", out)
+        self.assertIn("த", out)
+
+    def test_instruction_omits_empty_english_and_tamil(self):
+        block = {"type": "instruction", "sanskrit": "स", "english": "", "tamil": ""}
+        out = render_block(block)
+        self.assertEqual(out.count("instruction-lang"), 0)
+
     def test_render_body_has_no_blank_lines(self):
         blocks = [
             {"type": "subheading", "text": "X"},

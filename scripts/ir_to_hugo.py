@@ -253,6 +253,29 @@ def render_block(block):
     if t == "decoration":
         glyph = "❀ ❀ ❀" if block["style"] == "closesection" else "❀"
         return f'<div class="decoration">{glyph}</div>'
+    if t == "infobox":
+        # preamble.tex's \pujainfobox{title}{image}{tithi}{date-this-year}
+        # {date-next-year}{katha}{mulam} (tex_to_ir.py drops #2, the image
+        # path -- no image pipeline). A simple labeled panel rather than a
+        # reproduction of the print tcolorbox card design.
+        rows = [("तिथिः", block["tithi"]), ("इदानीं-वर्षे", block["date_this_year"]), ("आगामि-वर्षे", block["date_next_year"])]
+        if block["katha"]:
+            rows.append(("कथा", block["katha"]))
+        if block["mulam"]:
+            rows.append(("मूलम्", block["mulam"]))
+        row_html = "".join(f"<tr><th>{esc(k)}</th><td>{esc(v)}</td></tr>" for k, v in rows)
+        return f'<div class="infobox"><div class="infobox-title">{esc(block["title"])}</div><table class="infobox-table">{row_html}</table></div>'
+    if t == "instruction":
+        # preamble.tex's \instruct{sanskrit}{english}{tamil} -- a
+        # procedural stage-direction, up to 3 languages (english/tamil
+        # optional). Set apart from the surrounding mantra text as a
+        # distinct callout, matching the print \pujanote box's intent.
+        parts = [f'<p class="instruction-sanskrit">{esc(block["sanskrit"])}</p>']
+        if block["english"]:
+            parts.append(f'<p class="instruction-lang"><em>English:</em> {esc(block["english"])}</p>')
+        if block["tamil"]:
+            parts.append(f'<p class="instruction-lang"><em>தமிழ்:</em> {esc(block["tamil"])}</p>')
+        return f'<div class="instruction">{"".join(parts)}</div>'
     if t == "columns":
         inner = "".join(render_block(b) for b in block["blocks"])
         if block.get("source") == "multicols-responsive":
