@@ -1406,7 +1406,15 @@ def iter_input_files(inputs):
     for inp in inputs:
         p = Path(inp)
         if p.is_dir():
-            paths.extend(sorted(p.rglob("*.tex")))
+            # "old/" subdirectories (e.g. puja-vidhanam's pujas/old/) hold
+            # superseded drafts left in place for reference, not live corpus
+            # content -- never part of the site, so never worth parsing
+            # (puja-vidhanam's own pujas/old/ekadashi.tex uses a LaTeX
+            # \section[...] form this converter doesn't support, which is a
+            # dead end there, not a real gap to fix).
+            paths.extend(
+                sorted(f for f in p.rglob("*.tex") if "old" not in f.relative_to(p).parts[:-1])
+            )
         elif p.is_file():
             paths.append(p)
         else:

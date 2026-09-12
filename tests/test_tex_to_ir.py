@@ -12,10 +12,36 @@ from tex_to_ir import (  # noqa: E402
     TexScanner,
     clean_line_text,
     expand_local_macros,
+    iter_input_files,
     parse_blocks,
     strip_comments_and_extract_meta,
     to_deva,
 )
+
+
+class TestIterInputFiles(unittest.TestCase):
+    def test_old_subdirectory_is_skipped(self):
+        # puja-vidhanam's pujas/old/ holds superseded drafts (e.g.
+        # ekadashi.tex, which uses a \section[...] form this converter
+        # doesn't support) -- dead content, never part of the live corpus,
+        # so it should never even be handed to the parser.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "pujas" / "old").mkdir(parents=True)
+            (root / "pujas" / "old" / "ekadashi.tex").write_text(r"\section[x]{y}", encoding="utf-8")
+            (root / "pujas" / "live.tex").write_text(r"\sect{t}", encoding="utf-8")
+            paths = iter_input_files([str(root / "pujas")])
+        self.assertEqual([p.name for p in paths], ["live.tex"])
+
+    def test_old_named_file_itself_is_not_skipped(self):
+        # The exclusion is directory-scoped, not name-substring-based -- a
+        # file literally named old.tex (not inside an old/ directory) is
+        # ordinary live content.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "old.tex").write_text(r"\sect{t}", encoding="utf-8")
+            paths = iter_input_files([str(root)])
+        self.assertEqual([p.name for p in paths], ["old.tex"])
 
 
 class TestCleanLineText(unittest.TestCase):
