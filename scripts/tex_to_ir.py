@@ -397,6 +397,14 @@ INLINE_FONTSPEC_RE = re.compile(r"\\fontspec\{[^{}]*\}\{([^{}]*)\}")
 # scanner's normal brace-group handling consume {} transparently on the
 # next loop iteration; this regex has no such second pass).
 INLINE_BLANK_RE = re.compile(r"\\blank\b(\{\})?")
+# yajur-upakarma.tex's \instruct tamil field has "...ஶிக$^2$ரே..." -- a
+# math-mode superscript digit mid-word (a footnote-style citation number in
+# the source, not real math), same raw-captured-argument gap as \blank{}
+# above (the main scanner loop's own $-transparency, seen a few lines below
+# this table, never runs on already-captured text). Only a bare digit
+# superscript is supported -- the one shape actually seen in this corpus.
+INLINE_MATH_SUPERSCRIPT_RE = re.compile(r"\$\^(\d+)\$")
+SUPERSCRIPT_DIGITS = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
 
 
 class ParseError(Exception):
@@ -607,6 +615,7 @@ def clean_line_text(s, text_macros=None):
             break
         s = s2
     s = INLINE_BLANK_RE.sub(PUJA_BLANK, s)
+    s = INLINE_MATH_SUPERSCRIPT_RE.sub(lambda m: m.group(1).translate(SUPERSCRIPT_DIGITS), s)
     s = s.replace("~", " ")  # TeX non-breaking space
     return re.sub(r"\s+", " ", s).strip()
 

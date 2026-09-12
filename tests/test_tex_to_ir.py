@@ -531,6 +531,14 @@ class TestBlankSeeKshama(unittest.TestCase):
         self.assertEqual(clean_line_text(r"\blank{} अस्मिन्"), "( ) अस्मिन्")
         self.assertEqual(clean_line_text(r"\blank अस्मिन्"), "( ) अस्मिन्")
 
+    def test_math_mode_superscript_digit_inside_captured_argument(self):
+        # yajur-upakarma.tex's \instruct tamil field: "...ஶிக$^2$ரே..." --
+        # a footnote-style citation number mid-word, not real math. Same
+        # raw-captured-argument gap as \blank{} above: the main scanner
+        # loop's own $-transparency never runs on already-captured text.
+        self.assertEqual(clean_line_text(r"शिक$^2$रे"), "शिक²रे")
+        self.assertEqual(clean_line_text(r"a$^12$b"), "a¹²b")
+
     def test_math_mode_circ_word_separator(self):
         # yajur-upakarma.tex's \sep macro expands (via expand_local_macros)
         # to \hspace{...}{\small$\circ$}\hspace{...} -- $ has no real math
