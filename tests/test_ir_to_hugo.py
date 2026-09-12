@@ -369,6 +369,21 @@ class TestHtmlRendering(unittest.TestCase):
         self.assertEqual(out.count('class="verse-columns"'), 1)
         self.assertIn("column-count:2", out)
 
+    def test_multicols_responsive_source_gets_css_class_not_inline_count(self):
+        # puja-vidhanam's \maxColumns (tex_to_ir.py) has no single right
+        # fixed number -- stotras.css picks the column count by viewport
+        # width via this class instead of an inline column-count baking in
+        # one of the print targets' numbers.
+        block = {
+            "type": "columns",
+            "n": None,
+            "source": "multicols-responsive",
+            "blocks": [{"type": "prose", "lines": ["a"]}],
+        }
+        out = render_block(block)
+        self.assertIn('class="verse-columns verse-columns-responsive"', out)
+        self.assertNotIn("column-count", out)
+
     def test_table_renders_rows_and_cells(self):
         block = {"type": "table", "rows": [["a", "b & c"], ["d", "e"]]}
         out = render_block(block)

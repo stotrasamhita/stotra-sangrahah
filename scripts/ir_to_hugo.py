@@ -254,8 +254,16 @@ def render_block(block):
         glyph = "❀ ❀ ❀" if block["style"] == "closesection" else "❀"
         return f'<div class="decoration">{glyph}</div>'
     if t == "columns":
-        ncols = block.get("n") or 2
         inner = "".join(render_block(b) for b in block["blocks"])
+        if block.get("source") == "multicols-responsive":
+            # puja-vidhanam's \maxColumns (see tex_to_ir.py) has no single
+            # right fixed number -- it's a print-per-target knob, not a web
+            # layout choice. stotras.css's .verse-columns-responsive picks
+            # the column count by viewport width instead (1/2/3) rather
+            # than an inline style baking in one of the print targets'
+            # numbers.
+            return f'<div class="verse-columns verse-columns-responsive">{inner}</div>'
+        ncols = block.get("n") or 2
         return f'<div class="verse-columns" style="column-count:{ncols};">{inner}</div>'
     if t == "table":
         rows = "".join(

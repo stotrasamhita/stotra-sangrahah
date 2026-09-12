@@ -108,6 +108,13 @@ DROPPED_ZERO_ARG = {
     # stray backslashes in the source (typo), not real macros; dropped
     # rather than leaked as literal text.
     "sn", "ar",
+    # vedamantra-book's anuvaka-boundary marker (surya-namaskara.tex's
+    # \newcommand{\anuvakamend}[1][]{...}, always invoked bare with no
+    # optional arg supplied) -- draws a print-only rule + anuvaka number;
+    # its xparse [1][] optional-default form is out of expand_local_macros()'s
+    # scope to expand for real, so it's dropped outright rather than left
+    # leaking as literal text.
+    "anuvakamend",
 }
 DROPPED_ONE_ARG = {
     "label", "vspace", "setmainfont", "mbox", "hspace",
@@ -123,8 +130,14 @@ DROPPED_ONE_ARG = {
     # wholesale, path and all.
     "graphicspath", "includegraphics",
 }
-DROPPED_TWO_ARG = {"setlength", "addtolength"}  # lint-checked for begingroup/brace scoping
-DROPPED_TWO_ARG_NO_LINT = {"fontsize", "markboth"}  # markboth: print page-header bookmarking, no visible effect
+DROPPED_TWO_ARG_NO_LINT = {
+    "fontsize", "markboth",
+    # print-only spacing tweaks with no web equivalent -- dropped
+    # unconditionally rather than lint-checked for begingroup/brace scoping
+    # (their scope never mattered here: this converter doesn't model length
+    # values at all, so nothing downstream reads them regardless of scope).
+    "setlength", "addtolength",
+}
 UNWRAP_ONE_ARG = {
     "textbf", "textsf", "textit", "emph", "centerline", "textsuperscript",
     # styling/box wrappers with no web equivalent worth reproducing --
@@ -186,6 +199,14 @@ PUJA_TEXT_MACRO_DEFAULTS = {
 # \hyperref/\textbf unwrapping) so everything inside gets re-parsed normally,
 # rather than flattened to inert text.
 SPLICE_MACROS = {
+    # vedamantra-book's shloka.sty redefines this per-\closesection/\closesub
+    # (not a plain local \newcommand expand_local_macros() can see across a
+    # splice boundary) into an eight-petaled-flower print glyph; surya-
+    # namaskara.tex's \input of ArunaPrashnah.tex uses 3 of these in a row
+    # as a section-end divider (matching the existing "decoration" block's
+    # own "❀ ❀ ❀"/"❀" glyphs), so it's spliced as the same plain character
+    # rather than reproduced as print typesetting.
+    "EightFlowerPetal": "❀",
     "shuklambaradharam": r"\twolineshloka*{शुक्लाम्बरधरं विष्णुं शशिवर्णं चतुर्भुजम्}{प्रसन्नवदनं ध्यायेत् सर्वविघ्नोपशान्तये}",
     "hiranyagarbha": r"\twolineshloka*{हिरण्यगर्भगर्भस्थं हेमबीजं विभावसोः}{अनन्तपुण्यफलदम् अतः शान्तिं प्रयच्छ मे}",
     "vighneshvaraYathasthanam": (
@@ -810,7 +831,6 @@ def parse_blocks(text, path, warn, inherited=None):
     blocks = []
     prose_buf = []
     scope_stack = []
-    begingroup_depth = 0
     brace_depth = 0
     # \let\X\Y aliasing (e.g. \let\chapt\sect, \let\sect\dnsub for one local
     # macro to borrow another's behavior): resolved by name right after every
@@ -1002,13 +1022,29 @@ def parse_blocks(text, path, warn, inherited=None):
                         scope_stack.append(envname)
                     elif envname == "multicols":
                         n_arg = scanner.read_braced_arg().strip()
-                        try:
-                            ncols = int(n_arg)
-                        except ValueError:
-                            warn(f"non-numeric \\begin{{multicols}}{{{n_arg}}}, recording n=null")
+                        if n_arg == r"\maxColumns":
+                            # puja-vidhanam's master .tex files each define
+                            # \maxColumns per print target (pujavidhanam.tex:
+                            # 2 for the main edition; the Kindle variants: 3)
+                            # -- meaningless when parsing an individual puja
+                            # file standalone, and no single fixed number is
+                            # the right web answer anyway. Recorded as its
+                            # own source so the Hugo bridge can render it as
+                            # a responsive column-count instead (1 column on
+                            # narrow viewports, up to 3 on very wide ones)
+                            # rather than picking one of the print targets'
+                            # numbers arbitrarily.
                             ncols = None
+                            source = "multicols-responsive"
+                        else:
+                            try:
+                                ncols = int(n_arg)
+                            except ValueError:
+                                warn(f"non-numeric \\begin{{multicols}}{{{n_arg}}}, recording n=null")
+                                ncols = None
+                            source = "multicols"
                         flush()
-                        blocks.append({"type": "columns-open", "n": ncols, "source": "multicols"})
+                        blocks.append({"type": "columns-open", "n": ncols, "source": source})
                         scope_stack.append(envname)
                     elif envname == "AutoCols":
                         scanner.read_bracket_arg()
@@ -1276,11 +1312,9 @@ def parse_blocks(text, path, warn, inherited=None):
                 continue
 
             if name == "begingroup":
-                begingroup_depth += 1
                 alias_stack.append(dict(aliases))
                 continue
             if name == "endgroup":
-                begingroup_depth = max(0, begingroup_depth - 1)
                 if alias_stack:
                     aliases = alias_stack.pop()
                 continue
@@ -1292,13 +1326,6 @@ def parse_blocks(text, path, warn, inherited=None):
             if name in DROPPED_ONE_ARG:
                 scanner.read_bracket_arg()  # e.g. \setmainfont[Script=Devanagari]{Siddhanta}
                 scanner.read_braced_arg()
-                continue
-
-            if name in DROPPED_TWO_ARG:
-                scanner.read_braced_or_command_arg()  # e.g. \setlength\columnsep{0pt} -- \columnsep needs no braces
-                scanner.read_braced_arg()
-                if begingroup_depth == 0 and brace_depth == 0:
-                    warn(f"\\{name} outside \\begingroup/\\endgroup (or brace-group) scope")
                 continue
 
             if name in DROPPED_TWO_ARG_NO_LINT:

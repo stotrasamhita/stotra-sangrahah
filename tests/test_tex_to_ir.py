@@ -763,6 +763,69 @@ class TestMiscDroppedAndUnwrapped(unittest.TestCase):
         prose = next(b for b in blocks if b["type"] == "prose")
         self.assertEqual(prose["lines"][0], "[ text]")
 
+    def test_anuvakamend_dropped_silently(self):
+        # surya-namaskara.tex's \newcommand{\anuvakamend}[1][]{...} is an
+        # xparse optional-default form expand_local_macros() can't expand
+        # for real (see test_xparse_optional_default_form_skipped_not_
+        # misexpanded) -- always invoked bare in vedamantra-book's own
+        # content it splices in, so it's dropped outright rather than
+        # left leaking as literal "\anuvakamend" text, with no warning.
+        warnings = []
+        blocks = parse_blocks(
+            r"\sect{t}" + "\n" + "text before \\anuvakamend text after", "t", warnings.append
+        )
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["text"], "text before text after")
+        self.assertEqual(warnings, [])
+
+    def test_eightflowerpetal_becomes_flower_glyph(self):
+        # vedamantra-book shloka.sty's \EightFlowerPetal (a \closesection/
+        # \closesub redefinition, not a plain local \newcommand -- outside
+        # even the inherited-macro-table fix's reach) renders as a plain ❀,
+        # matching the existing "decoration" block's own glyph choice.
+        blocks = parse_blocks(r"\sect{t}" + "\n" + r"\EightFlowerPetal\EightFlowerPetal\EightFlowerPetal", "t", lambda msg: None)
+        prose = next(b for b in blocks if b["type"] == "prose")
+        self.assertEqual(prose["text"], "❀❀❀")
+
+    def test_setlength_addtolength_no_scope_warning(self):
+        # Previously lint-checked for begingroup/brace-group scoping;
+        # dropped unconditionally now since neither ever affected the IR
+        # regardless of scope (this converter doesn't model length values).
+        warnings = []
+        blocks = parse_blocks(
+            r"\setlength{\parindent}{0pt}" + "\n" + r"\addtolength{\parskip}{1pt}" + "\n" + r"\sect{t}",
+            "t", warnings.append,
+        )
+        self.assertEqual(warnings, [])
+        self.assertEqual(blocks[0]["type"], "heading")
+
+    def test_maxcolumns_multicols_recorded_as_responsive_no_warning(self):
+        # puja-vidhanam's \begin{multicols}{\maxColumns} -- \maxColumns is
+        # defined per print target in each master .tex file (2 or 3),
+        # meaningless when parsing an individual puja file standalone.
+        # Recorded as a distinct source ("multicols-responsive") for the
+        # Hugo bridge to render with responsive CSS breakpoints instead of
+        # guessing one of the print targets' fixed numbers -- no warning,
+        # since this is a known, intentional pattern, not a corpus typo.
+        warnings = []
+        text = r"\sect{t}" + "\n" + r"\begin{multicols}{\maxColumns}" + "\n" + r"line" + "\n" + r"\end{multicols}"
+        blocks = parse_blocks(text, "t", warnings.append)
+        self.assertEqual(warnings, [])
+        opens = [b for b in blocks if b["type"] == "columns-open"]
+        self.assertEqual(opens, [{"type": "columns-open", "n": None, "source": "multicols-responsive"}])
+
+    def test_other_non_numeric_multicols_still_warns(self):
+        # Only the specific \maxColumns sentinel is silenced -- any other
+        # non-numeric multicols argument is still a real anomaly worth
+        # flagging, same as before.
+        warnings = []
+        text = r"\sect{t}" + "\n" + r"\begin{multicols}{\somethingElse}" + "\n" + r"line" + "\n" + r"\end{multicols}"
+        blocks = parse_blocks(text, "t", warnings.append)
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("non-numeric", warnings[0])
+        opens = [b for b in blocks if b["type"] == "columns-open"]
+        self.assertEqual(opens, [{"type": "columns-open", "n": None, "source": "multicols"}])
+
 
 if __name__ == "__main__":
     unittest.main()
