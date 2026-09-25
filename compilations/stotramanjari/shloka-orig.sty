@@ -14,6 +14,7 @@
 
 \RequirePackage[no-math]{fontspec}
 \defaultfontfeatures{Scale=MatchLowercase,Mapping=tex-text}
+\XeTeXgenerateactualtext=1   %Enables copy-pasting and searching esp. in Adobe Reader, even if selection is messed up slightly :)
 \RequirePackage{pdfpages}
 \RequirePackage{xunicode}
 \RequirePackage{xltxtra}
@@ -389,11 +390,11 @@
 \fi}
 
 \newcommand{\sect}[1]{%
-\section[#1]{\fontspec[FakeBold=1.0,FakeStretch=1.0,Script=Devanagari,Mapping=tex-text]{Sanskrit 2003}॥#1॥}%
+\section[#1]{\fontspec[FakeBold=2.0,FakeStretch=1.0,Script=Devanagari,Mapping=tex-text]{Sanskrit 2003}॥#1॥}%
 }
 
 \newcommand{\chapt}[1]{%
-\chapter[#1]{\fontspec[FakeBold=1.0,FakeStretch=1.0,Script=Devanagari,Mapping=tex-text]{Sanskrit 2003}॥#1॥}%
+\chapter[#1]{\fontspec[FakeBold=2.0,FakeStretch=1.0,Script=Devanagari,Mapping=tex-text]{Sanskrit 2003}॥#1॥}%
 }
 
 \let\origdoublepage\cleardoublepage

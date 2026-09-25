@@ -1,11 +1,13 @@
 \documentclass[oneside,12pt]{book}
 \usepackage{shloka}
+\usepackage{autocols}
 \usepackage{etoolbox}
+\usepackage{fontawesome}
 \newbool{kindle}
 \setbool{kindle}{true}
 
 %%% PAGE SIZE and MARGINS %%%
-\usepackage[paperwidth=126mm,paperheight=168mm,left=4mm,right=4mm,top=9mm,bottom=10mm]{geometry}
+\usepackage[paperwidth=144mm,paperheight=192mm,left=4mm,right=4mm,top=9mm,bottom=10mm]{geometry}
 \addtolength{\headsep}{-4mm}
 \setmainfont[Script=Devanagari]{Sanskrit 2003}
 \newfontscript{Devanagari}{deva,dev2}
@@ -19,7 +21,8 @@
 \rhead[\fancyplain{}{\leftmark}]
    {\fancyplain{}{\pagenumfont\large\thepage}}
 \cfoot{}
-
+\fancyfoot[C]{\mbox{}}
+\renewcommand{\footrulewidth}{0.4pt}% default is 0pt
 \fancypagestyle{fancyplain}{ %
 \fancyhf{} % remove everything
 \renewcommand{\headrulewidth}{0pt} % remove lines as well
@@ -70,18 +73,31 @@ urlcolor=blue				% colour of external links
 \vbadness=10000
 \hfuzz=6pt
 %\listfiles
+
+\renewcommand{\maxColumns}{1}
+
+% Helper macro to set shlokaspaceskip independently
+\newcommand{\adjustShlokaSpaceSkip}{%
+  \ifnum\maxColumns=2\relax
+    \shlokaspaceskip=12pt
+  \else
+    \shlokaspaceskip=24pt
+  \fi
+}
+
 \begin{document}
 \Large\setmainfont[Script=Devanagari,Mapping=tex-text]{Sanskrit 2003}
 \begin{center}
 \input{"FPATH"}
 \end{center}
 \vfill
-\hrule
+\centering
+\rule{0.8\textwidth}{0.6pt}
+
 \footnotesize
-\urlstyle{sf}
-\textsf{This stotra can be accessed in multiple scripts at:\\
-\url{http://stotrasamhita.net/wiki/SSURL}. This PDF was downloaded from \url{http://stotrasamhita.github.io}.\\[1ex]
-Facebook: \url{http://facebook.com/StotraSamhita}\\[0.7ex]
-GitHub: \url{http://stotrasamhita.github.io}~|~\url{http://github.com/stotrasamhita}\\[0.7ex]
-Credits: \url{http://stotrasamhita.github.io/about/}}
+\urlstyle{sf}\sffamily
+This stotra can be accessed in multiple scripts at:\\
+\url{http://stotrasamhita.net/wiki/SSURL}.\\[1ex]
+\faFilePdfO~generated on \textbf{\today}\\[1ex]
+Downloaded from \faGlobe{}~\url{http://stotrasamhita.github.io}~|~\href{https://github.com/StotraSamhita}{\faGithubSquare{}~StotraSamhita}~|~\href{https://stotrasamhita.github.io/about/}{Credits}
 \end{document}

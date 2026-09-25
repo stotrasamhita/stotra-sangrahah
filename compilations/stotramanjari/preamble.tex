@@ -1,6 +1,7 @@
 % !TeX program = XeLaTeX
 % !TeX root = stotramanjari.tex
 \usepackage{shloka}
+\usepackage{autocols}
 \usepackage{wallpaper}
 
 %%% PAGE SIZE and MARGINS %%%
@@ -16,12 +17,22 @@
 \rhead[\fancyplain{}{\leftmark}]
    {\fancyplain{}{\pagenumfont\large\thepage}}
 \cfoot{}
-
+\fancyfoot[C]{\mbox{}}
+\renewcommand{\footrulewidth}{0.4pt}% default is 0pt
 \fancypagestyle{fancyplain}{ %
 \fancyhf{} % remove everything
 \renewcommand{\headrulewidth}{0pt} % remove lines as well
 \renewcommand{\footrulewidth}{0pt}
 \cfoot{\pagenumfont\large\thepage}}
+
+% Helper macro to set shlokaspaceskip independently
+\newcommand{\adjustShlokaSpaceSkip}{%
+  \ifnum\maxColumns=2\relax
+    \shlokaspaceskip=12pt
+  \else
+    \shlokaspaceskip=24pt
+  \fi
+}
 
 %%% SECTIONS and CHAPTERS %%%
 \makeatletter
@@ -68,14 +79,14 @@ urlcolor=black					% colour of external links
 \hfuzz=6pt
 % \listfiles
 
-\newcommand{\ar}{\char"0930\char"094D\char"E009}
-\newcommand{\ur}{\char"0930\char"094D\char"200C}
-\newcommand{\sr}{\char"0930\char"094D\char"E007}
-\newcommand{\sn}{\char"0928\char"094D\char"E007}
-\newcommand{\snn}{\char"0928\char"094D\char"0928\char"094D\char"E007}
-\newcommand{\an}{\char"0928\char"094D\char"E009}
-\newcommand{\aav}{\char"093D\char"E009}
-\newcommand{\sav}{\char"093D\char"E007}
+% \newcommand{\ar}{\char"0930\char"094D\char"E009}
+% \newcommand{\ur}{\char"0930\char"094D\char"200C}
+% \newcommand{\sr}{\char"0930\char"094D\char"E007}
+% \newcommand{\sn}{\char"0928\char"094D\char"E007}
+% \newcommand{\snn}{\char"0928\char"094D\char"0928\char"094D\char"E007}
+% \newcommand{\an}{\char"0928\char"094D\char"E009}
+% \newcommand{\aav}{\char"093D\char"E009}
+% \newcommand{\sav}{\char"093D\char"E007}
 %\newcommand{\sg}{}
 %\newcommand{\ag}{}
 %\newcommand{\ug}{}

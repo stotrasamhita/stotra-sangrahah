@@ -1,0 +1,48 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{stotrasamhita}[2020/11/01 StotraSamhita doc typesetting]
+\RequirePackage{wasysym}
+\usepackage[17pt]{extsizes}
+\usepackage[top=2.5cm, bottom=3cm, left=1.6cm, right=1.6cm]{geometry}
+% Headers & Footers
+\RequirePackage{fancyhdr}
+\pagestyle{fancyplain}
+\newcommand{\contactinfo}{}
+\newcommand{\rheadtext}{}
+\newcommand{\lheadtext}{}
+\rhead{\textcolor{RawSienna}{\normalsize\rheadtext}}
+\lhead{\textcolor{RawSienna}{\normalsize\lheadtext}}
+\cfoot{\color{StotraSamhitafg}\sffamily\large\thepage}
+
+\renewcommand{\dngfont}{\fontspec[Script=Devanagari,AutoFakeBold=2.5]{Sanskrit 2003}}
+\renewcommand{\tamilfont}{\fontspec[Script=Tamil,FakeStretch=0.85,AutoFakeBold=2.5]{Noto Serif Tamil}}
+\renewcommand{\telugufont}{\fontspec[Script=Telugu,AutoFakeBold=2.5]{Mandali}}
+\renewcommand{\kannadafont}{\fontspec[Script=Kannada,AutoFakeBold=2.5,Scale=0.9]{Nudi Unicode 01}}
+\renewcommand{\granthafont}{\fontspec[Script=Grantha,FakeStretch=0.9,AutoFakeBold=2.5]{Noto Serif Grantha}}
+\renewcommand{\malayalamfont}{\fontspec[Script=Malayalam,FakeStretch=0.9,AutoFakeBold=2.5]{Noto Serif Malayalam}}
+\renewcommand{\tamilgranthafont}{\fontspec[Script=Malayalam,FakeStretch=0.9,AutoFakeBold=2.5]{Agastya Serif}}
+\renewcommand{\hindifont}{\fontspec[Script=Devanagari,AutoFakeBold=2.5,AutoFakeSlant=0.2]{Sanskrit 2003}}
+% \renewcommand{\iastfont}{\fontspec[AutoFakeBold=2.5]{Gentium}}
+
+\definecolor{StotraSamhitafg}{RGB}{70,26,105}
+\definecolor{StotraSamhitabg}{RGB}{255,255,215}
+\definecolor{RawSienna}{RGB}{151,64,6}
+\pagecolor{StotraSamhitabg}
+\color{StotraSamhitafg}
+
+\renewcommand{\headrulewidth}{0pt}
+\setlength{\columnseprule}{1pt}
+\setlength{\columnsep}{30pt}
+
+\setlength{\headheight}{18pt}
+\setlength{\parindent}{0pt}
+\renewcommand{\labelitemi}{{$\circ$}}
+
+\usepackage[bookmarks=true,bookmarksopen=true,xetex,colorlinks=true,
+linkcolor=blue,            % colour of internal links
+citecolor=cyan,             % colour of links to bibliography
+filecolor=magenta,          % colour of file links
+urlcolor=blue,               % colour of external links
+linkbordercolor=blue,
+pdfborderstyle={/S/U/W 1}
+]{hyperref}
+

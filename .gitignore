@@ -95,3 +95,10 @@ stotra-sangrahah.sublime-workspace
 compilations/compilations.sublime-project
 compilations/compilations.sublime-workspace
 *.xdv
+
+## Generated build artifacts (e.g. scripts/tex_to_ir.py JSON output):
+_build/
+
+## Python:
+__pycache__/
+*.pyc
