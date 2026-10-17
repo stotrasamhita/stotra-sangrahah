@@ -326,7 +326,7 @@ Every PDF in this folder, for direct linking/navigation. These are mechanically 
 ### vishnu
 
 - [📄 BrahmapaaraStotram](https://github.com/stotrasamhita/stotra-sangrahah/blob/master/stotras-kindle-scribe-pdf/vishnu/BrahmapaaraStotram.pdf)
-- [📄 DhanvatariStotram](https://github.com/stotrasamhita/stotra-sangrahah/blob/master/stotras-kindle-scribe-pdf/vishnu/DhanvatariStotram.pdf)
+- [📄 DhanvantariStotram](https://github.com/stotrasamhita/stotra-sangrahah/blob/master/stotras-kindle-scribe-pdf/vishnu/DhanvantariStotram.pdf)
 - [📄 LakshmiNrisimhaKarunarasaStotram](https://github.com/stotrasamhita/stotra-sangrahah/blob/master/stotras-kindle-scribe-pdf/vishnu/LakshmiNrisimhaKarunarasaStotram.pdf)
 - [📄 LakshmiNrisimhaPancharatnam](https://github.com/stotrasamhita/stotra-sangrahah/blob/master/stotras-kindle-scribe-pdf/vishnu/LakshmiNrisimhaPancharatnam.pdf)
 - [📄 Pandurangashtakam](https://github.com/stotrasamhita/stotra-sangrahah/blob/master/stotras-kindle-scribe-pdf/vishnu/Pandurangashtakam.pdf)
